@@ -1,0 +1,70 @@
+{
+    "DeployProdEnvironment": false,
+
+    "DeployResourcesWithPublicAccess": true,
+
+    "DeployWithCustomNetworking": false,
+
+    "Assign_RBAC_On_Deployment": true,
+
+    "ServicePrincipalHasOwnerRBACAtSubscription": true,
+
+    "DeployFabricCapacity": false,
+
+    "DeployDataLake": true,
+
+    "DeployLandingStorage": true,
+
+    "DeployKeyVault": true,
+
+    "DeployAzureSQL": true,
+
+    "DeployAzureSQLArtifacts": false,
+    
+    "DeployADF": true,
+
+    "DeployADFArtifacts": false,
+
+    "UseDatabricksForIngestionNotebooks": true,
+
+    "DeploySynapse": false,
+
+    "DeploySynapseSparkPools": false,
+
+    "DeploySynapseSqlPools": false,
+
+    "DeploySynapseArtifacts": false,
+
+    "DeploySynapseWithDataExfiltrationProtection": false,
+
+    "DeployDatabricks": false,
+
+    "DeployDatabricksArtifacts": true,
+
+    "DeployDatabricksCompute": false,
+
+    "DatabricksUsesUnityCatalog": false,
+    
+    "DeployPurview": true,
+
+    "DeployLogicApp": true,
+
+    "DeployLogicAppArtifacts": false,
+
+    "DeployLogAnalytics": true,
+    
+    "DeployMLWorkspace": false,
+
+    "DeployMLCompute": false,
+    
+    "DeployCognitiveService": true,
+    
+    "DeployEventHubNamespace": false,
+
+    "DeployStreamAnalytics": false,
+
+    "DeployOpenAIServiceAndAiSearch": false,
+
+    "DeployOpenAIDemoApp": false
+    
+}

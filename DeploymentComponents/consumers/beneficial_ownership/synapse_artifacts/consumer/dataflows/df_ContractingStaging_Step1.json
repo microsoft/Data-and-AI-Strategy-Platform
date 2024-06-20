@@ -1,0 +1,102 @@
+{
+	"name": "df_ContractingStaging_Step1",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Staging"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flattenAll"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          auctions as string,",
+				"          awards as (CNUUID as string, agenciesURL as string, amendment as (changes as (former_value as string, property as string)[]), amendments as (date as string, description as string, id as string, rationale as string)[], buyer as (contactPoint as (address as (countryName as string, locality as string, postalCode as string, region as string, streetAddress as string), email as string, name as string, telephone as string), id as string, name as string), contractGroup as (relatedCN as string[], totalContractGroupPeriod as (endDate as string, startDate as string), totalContractGroupValue as string), contractPeriod as (durationInDays as string, endDate as string, maxExtentDate as string, startDate as string), costBenefitAnalysis as string, date as timestamp, description as string, descriptionContractor as string, descriptionRenegotiated as string, descriptionServices as string, documents as (datePublished as timestamp, description as string, documentType as string, documentTypeDetails as string, format as string, id as string, language as string, relatedLots as string[], title as string, url as string)[], eTenderProcurementMethod as string, evaluationCriteria as string, exemptionsProvisions as string, futureTransfersToContractor as string, futureTransfersToState as string, id as string, industrialRelationsDetails as (applicableIndustrialInstruments as string, locationOfWork as string, subContractorNames as string), isAtsiOwnedBusiness as string, isRevenueContract as string, items as (additionalClassifications as (description as string, id as string, scheme as string, uri as string)[], attributes as (id as string, name as string, value as string)[], classification as (description as string, id as string, scheme as string, uri as string), deliveryAddress as (locality as string, streetAddress as string), deliveryLocation as (description as string), description as string, id as string, quantity as double, relatedLot as string, subItems as (attributes as (id as string, name as string, value as string)[], description as string, group as string, id as string, quantity as string, unit as (id as string, name as string, value as (amount as string, currency as string)))[], unit as (id as short, name as string, scheme as string, value as (amount as string, currency as string)))[], otherInformation as string, otherKeyElements as string, otherPrivateSector as string, procurementMethod as string, publicSectorComparator as string, publishIntention as string, publishedDate as string, reasons as string, relatedBid as string, relatedLots as string[], relatedRFT as string[], relatedSON as string[], requirementResponses as (id as string, relatedTenderer as (id as string), requirement as (id as string), responder as (id as string, name as string), value as string)[], risk as string, significantGuarantee as string, status as string, statusDetails as string, summaryOfInfo as string, suppliers as (ABNExempt as string, additionalIdentifiers as (id as string, scheme as string)[], id as string, identifier as (id as string, legalName as string, scheme as string), name as string)[], title as string, value as (amount as double, currency as string, totalamount as string), valueDescription as string, weightedValue as (amount as double, currency as string))[],",
+				"          bids as string,",
+				"          buyer as (amendment as (changes as (former_value as string, property as string)[], date as string), contactPoint as (email as string, name as string, telephone as string), id as string, name as string),",
+				"          complaints as (ResolutionDate as string, date as string, description as string, documents as (datePublished as string, documentTypeDetails as string, id as string, language as string, title as string, url as string)[], events as (description as string, id as string, period as (endDate as string, startDate as string), status as string, type as string)[], id as string, intervenients as (id as string, name as string, roles as string[])[], previuosComplaintId as string, status as string, type as string)[],",
+				"          contracts as (agreedMetrics as (description as string, id as string, observations as (id as string, notes as string, unit as (id as short, name as string, scheme as string))[], title as string)[], amendments as (amendsAmount as (amount as string, currency as string), amendsPeriod as (durationInDays as string), date as string, description as string, financialCode as string, guarantee as (date as string, executed as string, id as string, percentage as string, period as (endDate as string), type as string), id as string, prepaid as string, rationale as string)[], awardID as string, dateSigned as string, description as string, documents as (datePublished as string, documentType as string, documentTypeDetails as string, format as string, id as string, language as string, title as string, url as string)[], guarantees as (date as string, id as string, obligations as string, period as (endDate as string, startDate as string))[], id as string, implementation as (financialProgress as (breakdown as (classifications as ({ programa} as string, anio as string, cdp as string, departamento as string, entidad as string, financiador as string, fuente_codigo as string, fuente_financiamiento as string, nivel as string, objeto_gasto as string, organismo_financiador as string, programa as string, proyecto as string, sub_programa as string, subprograma as string, tipo_presupuesto as string, tipo_programa as string), financialCode as string, id as string, measures as (monto_a_utilizar as string), period as (endDate as string, startDate as string))[]), milestones as (code as string, dateMet as string, documents as (datePublished as string, documentType as string, documentTypeDetails as string, format as string, id as string, language as string, title as string, url as string)[], dueDate as string, id as string, purcharseOrderId as string, status as string, title as string, type as string)[], purchaseOrders as (documents as (datePublished as string, documentType as string, format as string, id as string, language as string, title as string, url as string)[], executionPeriod as (endDate as string, startDate as string), id as string, status as string, title as string)[], transactions as (date as string, financialCode as string, finantialObligations as (bill as (amount as (amount as string, currency as string), date as string, id as string, type as string), id as string, retentions as (amount as (amount as string, currency as string), id as string, name as string, type as string)[])[], id as string, payee as (id as string, name as string), payer as (id as string, name as string), requestDate as string, source as string, sourceSystem as string, value as (amount as string, currency as string))[]), investmentProjects as (id as string, name as string, uri as string)[], items as (additionalClassifications as (description as string, id as string, scheme as string, uri as string)[], classification as (description as string, id as string, scheme as string, uri as string), deliveryAddress as (locality as string), description as string, id as string, quantity as string, unit as (name as string, value as (amount as string, currency as string)))[], period as (durationInDays as string, endDate as string, maxExtentDate as string, startDate as string), status as string, statusDetails as string, title as string, value as (amount as string, currency as string))[],",
+				"          date as string,",
+				"          decpUID as string,",
+				"          description as string,",
+				"          id as string,",
+				"          initiationType as string,",
+				"          invitations as (date as string, id as string, relatedQualification as string, status as string, tenderers as (id as string, name as string)[])[],",
+				"          language as string,",
+				"          multiAgencyAccess as string,",
+				"          ocid as string,",
+				"          parties as (additionalIdentifiers as (id as string, legalName as string, scheme as string)[], address as (addressDetails as (country as (description as string, id as string, scheme as string, uri as string), locality as (description as string, id as string, scheme as string, uri as string), region as (description as string, id as integer, scheme as string, uri as string)), countryName as string, locality as string, postalCode as string, region as string, streetAddress as string), contactPoint as (email as string, faxNumber as string, name as string, telephone as string, url as string), details as (Municipal as string, NEQ as string, activityTypes as string[], categories as (id as string, name as string)[], classifications as (description as string, id as string, scheme as string)[], entityType as string, legalEntityTypeDetail as string, level as string, scale as string, type as string), id as string, identifier as (id as double, legalName as string, scheme as string, uri as string), memberOf as (id as string, name as string)[], name as string, roles as string[])[],",
+				"          planning as (budget as (amount as (amount as double, currency as string), budgetBreakdown as (classifications as (anio as string, cdp as string, departamento as string, entidad as string, financiador as string, fuente_financiamiento as string, nivel as string, objeto_gasto as string, programa as string, proyecto as string, sub_programa as string, tipo_programa as string), id as string, measures as (monto_a_utilizar as string, monto_utilizado as string), period as (endDate as string, startDate as string), sourceParty as (id as string, name as string))[], description as string, finance as (financingParty as (id as string, name as string), id as string, period as (endDate as timestamp, startDate as timestamp), value as (amount as double, currency as string))[], id as string, project as string, projectID as string), documents as (datePublished as string, id as string, url as string)[], estimatedDate as string, identifier as string, investmentProjects as (id as string, name as string, uri as string)[], items as (classification as (description as string, id as string, scheme as string, uri as string), description as string, id as string)[], rationale as string),",
+				"          publishDate as string,",
+				"          qualifications as (date as string, id as string, relatedSubmission as string, requirementResponses as (id as string, relatedTenderer as (id as string), requirement as (id as string), responder as (id as string, name as string), value as string)[], scoring as string, status as string, statusDetails as string)[],",
+				"          relatedProces as (id as string, title as string)[],",
+				"          relatedProcesses as (id as string, identifier as string, relationship as string[], scheme as string, title as string)[],",
+				"          reviewProceedings as (complaints as (addressedTo as string, classification as (description as string), complainer as (name as string), date as timestamp, id as string, status as string)[], reviews as (classification as (description as string), complaint as string, date as timestamp, documents as (id as integer, url as string)[], id as string, resolution as string, status as string)[]),",
+				"          secondStage as (candidates as (id as string, name as string)[], documents as (datePublished as string, documentType as string, documentTypeDetails as string, id as string, language as string, title as string, url as string)[], id as string),",
+				"          sources as (id as string, name as string, url as string)[],",
+				"          submissions as (details as (candidates as (id as string, name as string)[], date as string, documents as (datePublished as string, documentType as string, id as string, title as string, url as string)[], id as string, status as string)[]),",
+				"          tag as string[],",
+				"          tender as (PPstatus as string, RFTAccess as string, additionalProcurementCategories as string[], addressForLodgement as string, amendment as (changes as (former_value as string, property as string)[], date as string, rationale as string), amendments as string, auctionPeriod as (endDate as timestamp, startDate as timestamp), awardCriteria as string, awardCriteriaDetails as string, awardPeriod as (durationInDays as string, endDate as timestamp, maxExtentDate as string, startDate as timestamp), bidOpening as (address as (countryName as string, streetAddress as string), date as string, location as (description as string)), capabilities as string[], clarificationMeetings as (address as (streetAddress as string), date as string, id as string)[], classification as (description as string, id as string, scheme as string), conditionsForParticipation as string, contractPeriod as (durationInDays as string, endDate as timestamp, maxExtentDate as string, startDate as timestamp), contractTerms as (electronicInvoicingPolicy as string, hasElectronicOrdering as boolean, hasElectronicPayment as boolean), coveredBy as string[], coveredProcurement as string, criteria as (classification as (id as string, scheme as string), description as string, id as string, relatesTo as string, requirementGroups as (description as string, id as string, requirements as (dataType as string, expectedValue as boolean, id as string, title as string)[])[], source as string, title as string)[], crossBorderLaw as string, datePublished as string, deliveryLocation as string, deliveryarea as string, description as string, documents as string, eTenderProcurementMethod as string, eTenderStatus as string, eligibilityCriteria as string, enquiries as (answer as string, author as (id as string, name as string), date as timestamp, dateAnswered as timestamp, description as string, id as string, relatedLot as string, title as string)[], enquiriesAddress as (streetAddress as string), enquiryPeriod as (durationInDays as string, endDate as timestamp, maxExtentDate as string, startDate as timestamp), estimatedDateToMarket as string, hasEnquiries as boolean, id as string, inheritanceType as string, items as string, lodgeResponse as string, lots as (attributes as (id as string, name as string, value as string)[], contractPeriod as (endDate as timestamp, startDate as timestamp), description as string, hasOptions as boolean, hasRecurrence as boolean, hasRenewal as boolean, id as string, minValue as (amount as string, currency as string), openContractType as string, simultaneousSupply as string, status as string, statusDetails as string, submissionTerms as (variantPolicy as string), title as string, value as (amount as double, currency as string))[], mainProcurementCategory as string, mainProcurementCategoryDetails as string, minValue as string, multiAgencyAccess as string, multiAgencyAccessType as string, notifiedSuppliers as (id as string, name as string)[], numberOfTenderers as string, plannedProcurementUUID as string, preQualifications as (description as string, title as string)[], procedure as (isAccelerated as boolean), procurementIntention as (category as string, description as string, id as string, procuringEntity as (id as string, name as string), publishedDate as string, rationale as string, startDate as string, status as string, statusDetails as string, title as string, uri as string), procurementMethod as string, procurementMethodDetails as string, procurementMethodRationale as string, procuringEntity as (contactPoint as (email as string, fax as string, mobile as string, name as string, telephone as string, url as string), id as string, identifier as (id as string, scheme as string, uri as string), name as string, roles as string[]), questionnaires as (description as string, title as string)[], relatedCN as string, relatedRFT as string, relatedSON as string, status as string, statusDetails as string, submissionMethod as string, submissionMethodDetails as string, techniques as (hasDynamicPurchasingSystem as boolean, hasElectronicAuction as string, hasFrameworkAgreement as boolean), tenderPeriod as string, tenderType as string, tenderers as string, timeframeDelivery as string, title as string, value as string),",
+				"          title as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'json',",
+				"     fileSystem: 'raw',",
+				"     documentForm: 'documentPerLine',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/*/AllTime/v1/full/*/*/*/*']) ~> source1",
+				"source1 foldDown(unroll(parties),",
+				"     mapColumn(",
+				"          address = parties.address.streetAddress,",
+				"          postalCode = parties.address.postalCode,",
+				"          country = parties.address.countryName,",
+				"          id = parties.id,",
+				"          name = parties.name,",
+				"          email = parties.contactPoint.email,",
+				"          telephone = parties.contactPoint.telephone,",
+				"          url = parties.contactPoint.url,",
+				"          roles = parties.roles,",
+				"          awards,",
+				"          tender,",
+				"          date",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattenAll",
+				"flattenAll sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: 'BeneficialOwnership/OpenData/Contracting/Flattened/Step1',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

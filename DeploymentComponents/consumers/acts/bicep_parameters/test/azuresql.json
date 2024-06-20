@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "azureSQLServerName": {
+      "value": "FROM_VARIABLE_FILE"
+    },
+    "restrictOutboundNetworkAccess": {
+      "value": "Enabled"
+    },
+    "minimalTlsVersion": {
+      "value": "1.2"
+    },
+    "azureSQLServerDBName": {
+      "value": "FROM_VARIABLE_FILE"
+    },
+    "maxSizeBytes": {
+      "value": 2147483648
+    },
+    "requestedBackupStorageRedundancy": {
+      "value": "Zone"
+    },
+    "databaseCollation": {
+      "value": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "catalogCollation": {
+      "value": "DATABASE_DEFAULT"
+    },
+    "AADType": {
+      "value": "Group"
+    },
+    "AADName": {
+      "value": "FROM_VARIABLE_FILE"
+    },
+    "AADID": {
+      "value": "FROM_COMMAND_LINE_OUTPUT"
+    },
+    "enableAuditLogging": {
+      "value": true
+    }
+  }
+}

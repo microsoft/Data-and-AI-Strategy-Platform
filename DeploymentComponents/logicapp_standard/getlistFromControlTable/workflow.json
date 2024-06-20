@@ -1,0 +1,68 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT\nid,\ndestination_filename,\ndestination_folderpath,\ncontrol_table_record_id,\ningestion_status\n FROM [dbo].[IngestedLandingDataAudit]"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_query')[0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "control_table_record_id": {
+                                    "type": "integer"
+                                },
+                                "destination_filename": {
+                                    "type": "string"
+                                },
+                                "destination_folderpath": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "destination_filename",
+                                "destination_folderpath",
+                                "control_table_record_id"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Execute_query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {},
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

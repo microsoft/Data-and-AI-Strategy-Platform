@@ -1,0 +1,90 @@
+# This is a basic workflow to help you get started with Actions
+
+name: data-strategy-orchestrator
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  get-env-variables:
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    outputs:
+      DeployDevEnvironment: ${{ env.DeployDevEnvironment }}
+      DeployTestEnvironment: ${{ env.DeployTestEnvironment }}
+      DeployProdEnvironment: ${{ env.DeployProdEnvironment }}
+      
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Determine Environments to Deploy 
+        run: |
+          $ff_dev = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_dev.json" | ConvertFrom-Json -AsHashtable
+          $DeployDevEnvironment = $ff_dev.DeployDevEnvironment
+          "DeployDevEnvironment=$DeployDevEnvironment" >> $env:GITHUB_ENV
+
+          $ff_test = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_test.json" | ConvertFrom-Json -AsHashtable
+          $DeployTestEnvironment = $ff_test.DeployTestEnvironment
+          "DeployTestEnvironment=$DeployTestEnvironment" >> $env:GITHUB_ENV
+
+          $ff_prod = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_prod.json" | ConvertFrom-Json -AsHashtable
+          $DeployProdEnvironment = $ff_prod.DeployProdEnvironment
+          "DeployProdEnvironment=$DeployProdEnvironment" >> $env:GITHUB_ENV
+        shell: pwsh
+
+  deploy-dev-azure-resources:
+    needs: get-env-variables
+    if: ${{ needs.get-env-variables.outputs.DeployDevEnvironment == 'True' }}
+    uses: ./.github/workflows/deployment_environment.yml
+    with:
+      environment: 'development'
+      envFolderPath: 'dev'
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      VM_USERNAME: ${{ secrets.VM_USERNAME }}
+      VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+
+  deploy-test-azure-resources:
+    needs: get-env-variables
+    if: ${{ needs.get-env-variables.outputs.DeployTestEnvironment == 'True' }}
+    uses: ./.github/workflows/deployment_environment.yml
+    with:
+      environment: 'test'
+      envFolderPath: 'test'
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      VM_USERNAME: ${{ secrets.VM_USERNAME }}
+      VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+
+  deploy-prod-azure-resources:
+    needs: get-env-variables
+    if: ${{ needs.get-env-variables.outputs.DeployProdEnvironment == 'True' }}
+    uses: ./.github/workflows/deployment_environment.yml
+    with:
+      environment: 'production'
+      envFolderPath: 'prod'
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      VM_USERNAME: ${{ secrets.VM_USERNAME }}
+      VM_PASSWORD: ${{ secrets.VM_PASSWORD }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+

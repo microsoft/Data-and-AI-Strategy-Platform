@@ -1,0 +1,276 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_InsertDataContract",
+                        "storedProcedureParameters": {
+                            "jsonData": "@variables('jsonData')"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "Initialize_JSON": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "jsonData",
+                            "type": "string",
+                            "value": "@{triggerBody()}"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_stored_procedure')",
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "Execute_stored_procedure": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "BusinessContact": {
+                                    "type": "string"
+                                },
+                                "BusinessContactEmail": {
+                                    "type": "string"
+                                },
+                                "BusinessContactObjID": {
+                                    "type": "string"
+                                },
+                                "BusinessContactUPN": {
+                                    "type": "string"
+                                },
+                                "ContractID": {
+                                    "type": "string"
+                                },
+                                "CreatedBy": {
+                                    "type": "string"
+                                },
+                                "CreatedByEmail": {
+                                    "type": "string"
+                                },
+                                "CreatedById": {
+                                    "type": "string"
+                                },
+                                "CreatedByUPN": {
+                                    "type": "string"
+                                },
+                                "DataClassificationLevel": {
+                                    "type": "string"
+                                },
+                                "DataNameFriendly": {
+                                    "type": "string"
+                                },
+                                "DataNameSystem": {
+                                    "type": "string"
+                                },
+                                "DataOwner": {
+                                    "type": "string"
+                                },
+                                "DataOwnerEmail": {
+                                    "type": "string"
+                                },
+                                "DataOwnerObjID": {
+                                    "type": "string"
+                                },
+                                "DataOwnerUPN": {
+                                    "type": "string"
+                                },
+                                "Description": {
+                                    "type": "string"
+                                },
+                                "EngineeringContact": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactEmail": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactObjID": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactUPN": {
+                                    "type": "string"
+                                },
+                                "Format": {
+                                    "type": "string"
+                                },
+                                "Metadata": {
+                                    "type": "string"
+                                },
+                                "Pattern": {
+                                    "type": "string"
+                                },
+                                "PublisherName": {
+                                    "type": "string"
+                                },
+                                "Restrictions": {
+                                    "type": "string"
+                                },
+                                "SME": {
+                                    "items": {
+                                        "properties": {
+                                            "AccountEnabled": {
+                                                "type": "boolean"
+                                            },
+                                            "BusinessPhones": {
+                                                "items": {
+                                                    "properties": {
+                                                        "Value": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "Value"
+                                                    ],
+                                                    "type": "object"
+                                                },
+                                                "type": "array"
+                                            },
+                                            "City": {
+                                                "type": "string"
+                                            },
+                                            "CompanyName": {},
+                                            "Country": {
+                                                "type": "string"
+                                            },
+                                            "Department": {
+                                                "type": "string"
+                                            },
+                                            "DisplayName": {
+                                                "type": "string"
+                                            },
+                                            "GivenName": {
+                                                "type": "string"
+                                            },
+                                            "Id": {
+                                                "type": "string"
+                                            },
+                                            "JobTitle": {
+                                                "type": "string"
+                                            },
+                                            "Mail": {
+                                                "type": "string"
+                                            },
+                                            "MailNickname": {
+                                                "type": "string"
+                                            },
+                                            "OfficeLocation": {
+                                                "type": "string"
+                                            },
+                                            "PostalCode": {
+                                                "type": "string"
+                                            },
+                                            "Surname": {
+                                                "type": "string"
+                                            },
+                                            "TelephoneNumber": {},
+                                            "UserPrincipalName": {
+                                                "type": "string"
+                                            },
+                                            "mobilePhone": {}
+                                        },
+                                        "required": [
+                                            "AccountEnabled",
+                                            "BusinessPhones",
+                                            "City",
+                                            "CompanyName",
+                                            "Country",
+                                            "Department",
+                                            "DisplayName",
+                                            "GivenName",
+                                            "Id",
+                                            "JobTitle",
+                                            "Mail",
+                                            "MailNickname",
+                                            "OfficeLocation",
+                                            "PostalCode",
+                                            "Surname",
+                                            "TelephoneNumber",
+                                            "UserPrincipalName",
+                                            "mobilePhone"
+                                        ],
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                },
+                                "SourceSystem": {
+                                    "type": "string"
+                                },
+                                "SubjectArea": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "BusinessContact",
+                                "BusinessContactEmail",
+                                "BusinessContactObjID",
+                                "BusinessContactUPN",
+                                "ContractID",
+                                "CreatedBy",
+                                "CreatedByEmail",
+                                "CreatedById",
+                                "CreatedByUPN",
+                                "DataClassificationLevel",
+                                "DataNameFriendly",
+                                "DataNameSystem",
+                                "DataOwner",
+                                "DataOwnerEmail",
+                                "DataOwnerObjID",
+                                "DataOwnerUPN",
+                                "Description",
+                                "EngineeringContact",
+                                "EngineeringContactEmail",
+                                "EngineeringContactObjID",
+                                "EngineeringContactUPN",
+                                "Format",
+                                "Metadata",
+                                "PublisherName",
+                                "Restrictions",
+                                "SME",
+                                "SourceSystem",
+                                "SubjectArea"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

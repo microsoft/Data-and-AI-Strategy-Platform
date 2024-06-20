@@ -1,0 +1,172 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "For_each": {
+                        "actions": {
+                            "Execute_stored_procedure": {
+                                "inputs": {
+                                    "parameters": {
+                                        "storedProcedureName": "usp_packageToControlFile",
+                                        "storedProcedureParameters": {
+                                            "Id": "@{body('Parse_JSON')?['Id']}"
+                                        }
+                                    },
+                                    "serviceProviderConfiguration": {
+                                        "connectionName": "sql",
+                                        "operationId": "executeStoredProcedure",
+                                        "serviceProviderId": "/serviceProviders/sql"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Parse_JSON": [
+                                        "SUCCEEDED"
+                                    ]
+                                },
+                                "trackedProperties": {},
+                                "type": "ServiceProvider"
+                            },
+                            "Invoke_a_workflow_in_this_workflow_app": {
+                                "inputs": {
+                                    "body": "@body('Execute_stored_procedure')?['resultSets'][0]",
+                                    "host": {
+                                        "workflow": {
+                                            "id": "DataContractIngestion"
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Execute_stored_procedure": [
+                                        "SUCCEEDED"
+                                    ]
+                                },
+                                "type": "Workflow"
+                            },
+                            "Parse_JSON": {
+                                "inputs": {
+                                    "content": "@items('For_each')[0]",
+                                    "schema": {
+                                        "properties": {
+                                            "Active": {
+                                                "type": "boolean"
+                                            },
+                                            "ActiveDate": {
+                                                "type": "string"
+                                            },
+                                            "ConnectionType": {
+                                                "type": "string"
+                                            },
+                                            "CreatedBy": {
+                                                "type": "string"
+                                            },
+                                            "CreatedByDate": {
+                                                "type": "string"
+                                            },
+                                            "DataAssetTechnicalInformation": {
+                                                "type": "string"
+                                            },
+                                            "DataContractID": {
+                                                "type": "string"
+                                            },
+                                            "DataSourceName": {
+                                                "type": "string"
+                                            },
+                                            "EditedBy": {},
+                                            "EditedByDate": {},
+                                            "Id": {
+                                                "type": "integer"
+                                            },
+                                            "InactiveDate": {},
+                                            "IngestionSchedule": {
+                                                "type": "string"
+                                            },
+                                            "Publisher": {
+                                                "type": "string"
+                                            },
+                                            "SourceFolderPath": {
+                                                "type": "string"
+                                            },
+                                            "SourceTechnicalInformation": {
+                                                "type": "string"
+                                            },
+                                            "dynamicSinkPath": {
+                                                "type": "string"
+                                            },
+                                            "sentToProcess": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "ParseJson"
+                            }
+                        },
+                        "foreach": "@body('Execute_query')",
+                        "type": "Foreach"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Terminate": {
+                            "inputs": {
+                                "runStatus": "Cancelled"
+                            },
+                            "type": "Terminate"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "not": {
+                                "equals": [
+                                    "@length(body('Execute_query'))",
+                                    0
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Execute_query": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "If"
+            },
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT * FROM [dbo].[Handshake] WHERE [sentToProcess] = 0"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "trackedProperties": {},
+                "type": "ServiceProvider"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "Recurrence": {
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 2,
+                    "timeZone": "Eastern Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

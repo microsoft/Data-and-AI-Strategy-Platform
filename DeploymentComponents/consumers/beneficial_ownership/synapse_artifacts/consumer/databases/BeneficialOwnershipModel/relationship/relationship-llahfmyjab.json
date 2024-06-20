@@ -1,0 +1,26 @@
+{
+	"name": "relationship-llahfmyjab",
+	"properties": {
+		"Name": "relationship-llahfmyjab",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "RiskCovariate",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "9de73ef7-2105-42c8-9d75-8c32eaf28dc8"
+	},
+	"type": "RELATIONSHIP"
+}

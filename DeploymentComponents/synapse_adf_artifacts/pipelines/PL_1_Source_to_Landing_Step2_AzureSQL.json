@@ -1,0 +1,857 @@
+{
+    "name": "PL_1_Source_to_Landing_Step2_AzureSQL",
+    "properties": {
+        "activities": [
+            {
+                "name": "If Watermark Value Used",
+                "type": "IfCondition",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(equals(pipeline().parameters.watermark_column,''))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Max Value of Watermark",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT  MAX(@{pipeline().parameters.watermark_column}) as Watermark_Value\nFROM    @{pipeline().parameters.schemaName}.@{pipeline().parameters.tableName}",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_AzureSQL",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "keyVaultSecretName": {
+                                            "value": "@pipeline().parameters.keyVaultSecretName",
+                                            "type": "Expression"
+                                        },
+                                        "schemaName": {
+                                            "value": "@pipeline().parameters.schemaName",
+                                            "type": "Expression"
+                                        },
+                                        "tableName": {
+                                            "value": "@pipeline().parameters.tableName",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set Watermark Value",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Max Value of Watermark",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "next_watermark_value",
+                                "value": {
+                                    "value": "@activity('Get Max Value of Watermark').output.firstRow.Watermark_Value",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Get Prior Watermark Value",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "If Watermark Value Used",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[GetSourceDataWatermarkValue]",
+                        "storedProcedureParameters": {
+                            "control_table_record_id": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.control_table_record_id",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Check For Rows",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Get Prior Watermark Value",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT  COUNT(*) AS NumberOfRows\nFROM    (\n    @{replace(pipeline().parameters.query, 'WATERMARKVALUE', activity('Get Prior Watermark Value').output.firstRow.WatermarkValue)}\n) Subquery",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_AzureSQL",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "keyVaultSecretName": {
+                                "value": "@pipeline().parameters.keyVaultSecretName",
+                                "type": "Expression"
+                            },
+                            "schemaName": {
+                                "value": "@pipeline().parameters.schemaName",
+                                "type": "Expression"
+                            },
+                            "tableName": {
+                                "value": "@pipeline().parameters.tableName",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Ingestion Condition",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Check For Rows",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "ingestion_condition",
+                    "value": {
+                        "value": "@if(greater(activity('Check For Rows').output.firstRow.NumberOfRows,0)\n    ,pipeline().parameters.partitioningOption\n    ,'NoNewData'\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Filename with Timestamp",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Set Load Type",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "filename_w_timestamp",
+                    "value": {
+                        "value": "@replace(pipeline().parameters.outputFileName\r\n        ,'YYYYMMDDHHMMSS'\r\n        ,concat(\r\n            formatDateTime(utcnow(),'yyyy')\r\n            ,formatDateTime(utcnow(),'MM')\r\n            ,formatDateTime(utcnow(),'dd')\r\n            ,formatDateTime(utcnow(),'HH')\r\n            ,formatDateTime(utcnow(),'mm')\r\n            ,formatDateTime(utcnow(),'ss')\r\n         )   \r\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "FolderPath with Timestamp",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Filename with Timestamp",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "folderpath_w_ingestionType",
+                    "value": {
+                        "value": "@concat(\n            pipeline().parameters.outputFolderPath\n            ,variables('load_type'), '/'\n            ,formatDateTime(utcnow(),'yyyy'), '/'\n            ,formatDateTime(utcnow(),'MM'), '/'\n            ,formatDateTime(utcnow(),'dd'), '/'\n            ,formatDateTime(utcnow(),'HH'), '/'\n            ,formatDateTime(utcnow(),'mm'), '/'\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "PartitionOption",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "FolderPath with Timestamp",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@variables('ingestion_condition')",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "PhysicalPartitionsOfTable",
+                            "activities": [
+                                {
+                                    "name": "Copy With PhysicalPartitionsOfTable",
+                                    "type": "Copy",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "AzureSqlSource",
+                                            "sqlReaderQuery": {
+                                                "value": "@replace(\n        replace(\n        pipeline().parameters.query, 'WATERMARKVALUE',\n        activity('Get Prior Watermark Value').output.firstRow.WatermarkValue\n        )\n        , ' WHERE ', ' PARTITION(\"?AdfTabularPartitionName\") WHERE '\n)",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": {
+                                                "value": "PhysicalPartitionsOfTable",
+                                                "type": "Expression"
+                                            },
+                                            "partitionSettings": {
+                                                "partitionUpperBound": "",
+                                                "partitionLowerBound": ""
+                                            }
+                                        },
+                                        "sink": {
+                                            "type": "ParquetSink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            },
+                                            "formatSettings": {
+                                                "type": "ParquetWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false,
+                                        "translator": {
+                                            "type": "TabularTranslator",
+                                            "typeConversion": true,
+                                            "typeConversionSettings": {
+                                                "allowDataTruncation": false,
+                                                "treatBooleanAsNumber": false
+                                            }
+                                        }
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_AzureSQL",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "keyVaultSecretName": {
+                                                    "value": "@pipeline().parameters.keyVaultSecretName",
+                                                    "type": "Expression"
+                                                },
+                                                "schemaName": {
+                                                    "value": "@pipeline().parameters.schemaName",
+                                                    "type": "Expression"
+                                                },
+                                                "tableName": {
+                                                    "value": "@pipeline().parameters.tableName",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Parquet_File",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.outputContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@variables('folderpath_w_ingestionType')",
+                                                    "type": "Expression"
+                                                },
+                                                "fileName": {
+                                                    "value": "@variables('filename_w_timestamp')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Count rows copied - Physical partitions of table",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Copy With PhysicalPartitionsOfTable",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "rows_copied_count",
+                                        "value": {
+                                            "value": "@string(activity('Copy With PhysicalPartitionsOfTable').output.rowsCopied)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "None",
+                            "activities": [
+                                {
+                                    "name": "Copy With No Source Partitioning",
+                                    "type": "Copy",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "AzureSqlSource",
+                                            "sqlReaderQuery": {
+                                                "value": "@replace(\n        pipeline().parameters.query, 'WATERMARKVALUE',\n        activity('Get Prior Watermark Value').output.firstRow.WatermarkValue\n        )",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "sink": {
+                                            "type": "ParquetSink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            },
+                                            "formatSettings": {
+                                                "type": "ParquetWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false,
+                                        "translator": {
+                                            "type": "TabularTranslator",
+                                            "typeConversion": true,
+                                            "typeConversionSettings": {
+                                                "allowDataTruncation": false,
+                                                "treatBooleanAsNumber": false
+                                            }
+                                        }
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_AzureSQL",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "keyVaultSecretName": {
+                                                    "value": "@pipeline().parameters.keyVaultSecretName",
+                                                    "type": "Expression"
+                                                },
+                                                "schemaName": {
+                                                    "value": "@pipeline().parameters.schemaName",
+                                                    "type": "Expression"
+                                                },
+                                                "tableName": {
+                                                    "value": "@pipeline().parameters.tableName",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Parquet_File",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.outputContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@variables('folderpath_w_ingestionType')",
+                                                    "type": "Expression"
+                                                },
+                                                "fileName": {
+                                                    "value": "@variables('filename_w_timestamp')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Count rows copied - No Partition",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Copy With No Source Partitioning",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "rows_copied_count",
+                                        "value": {
+                                            "value": "@string(activity('Copy With No Source Partitioning').output.rowsCopied)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Update Logging Record For Success",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "If New Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[LogDataFromSource]",
+                        "storedProcedureParameters": {
+                            "destination_filename": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('ingestion_condition'),'NoNewData')\n    ,'No New Data'\n    ,variables('filename_w_timestamp')\n)",
+                                    "type": "Expression"
+                                }
+                            },
+                            "destination_folderpath": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('ingestion_condition'),'NoNewData')\n    ,'No New Data'\n    ,variables('folderpath_w_ingestionType')\n)",
+                                    "type": "Expression"
+                                }
+                            },
+                            "id_to_update": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.id_to_update",
+                                    "type": "Expression"
+                                }
+                            },
+                            "ingestion_status": {
+                                "type": "String",
+                                "value": "Processed"
+                            },
+                            "source": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@replace(\n        pipeline().parameters.query, 'WATERMARKVALUE',\n        activity('Get Prior Watermark Value').output.firstRow.WatermarkValue\n        )",
+                                    "type": "Expression"
+                                }
+                            },
+                            "watermark_value": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@variables('next_watermark_value')",
+                                    "type": "Expression"
+                                }
+                            },
+                            "rows_copied_count": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('ingestion_condition'),'NoNewData'),0,int(variables('rows_copied_count')))",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "If New Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "PartitionOption",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(equals(variables('ingestion_condition'), 'NoNewData'))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Output Log File",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "additionalColumns": [
+                                        {
+                                            "name": "container",
+                                            "value": {
+                                                "value": "@pipeline().parameters.outputContainer",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "folderPath",
+                                            "value": {
+                                                "value": "@variables('folderpath_w_ingestionType')",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "fileName",
+                                            "value": {
+                                                "value": "@if(equals(variables('ingestion_condition'),'None')\n,variables('filename_w_timestamp')\n,''\n)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    ],
+                                    "sqlReaderQuery": "SELECT TOP 1 * FROM [dbo].[ControlTable]",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "DelimitedTextSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextWriteSettings",
+                                        "quoteAllText": true,
+                                        "fileExtension": ".txt"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "mappings": [
+                                        {
+                                            "source": {
+                                                "name": "container",
+                                                "type": "String"
+                                            },
+                                            "sink": {
+                                                "name": "container",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            }
+                                        },
+                                        {
+                                            "source": {
+                                                "name": "folderPath",
+                                                "type": "String"
+                                            },
+                                            "sink": {
+                                                "name": "folderPath",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            }
+                                        },
+                                        {
+                                            "source": {
+                                                "name": "fileName",
+                                                "type": "String"
+                                            },
+                                            "sink": {
+                                                "name": "fileName",
+                                                "type": "String",
+                                                "physicalType": "String"
+                                            }
+                                        }
+                                    ],
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "DS_Landing_DelimitedText_File_HeaderTrue",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": {
+                                            "value": "@pipeline().parameters.outputContainer",
+                                            "type": "Expression"
+                                        },
+                                        "folderPath": {
+                                            "value": "@concat('ingested_data_log/',\npipeline().parameters.outputFolderPath\n)",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@concat(utcnow(),guid(),'.csv')",
+                                            "type": "Expression"
+                                        },
+                                        "encoding": "UTF-8",
+                                        "firstRowHeader": true,
+                                        "delimiter": ",",
+                                        "compression": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set Load Type",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Check if First Load",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "load_type",
+                    "value": {
+                        "value": "@if(equals(activity('Check if First Load').output.firstRow.firstLoad,'Yes'), 'full','incremental')",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Check if First Load",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Ingestion Condition",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[DetermineFullOrDeltaLoad]",
+                        "storedProcedureParameters": {
+                            "control_table_record_id": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.control_table_record_id",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "tableName": {
+                "type": "string"
+            },
+            "schemaName": {
+                "type": "string"
+            },
+            "query": {
+                "type": "string"
+            },
+            "outputContainer": {
+                "type": "string"
+            },
+            "outputFolderPath": {
+                "type": "string"
+            },
+            "outputFileName": {
+                "type": "string"
+            },
+            "watermark_column": {
+                "type": "string"
+            },
+            "control_table_record_id": {
+                "type": "string"
+            },
+            "partitioningOption": {
+                "type": "string"
+            },
+            "id_to_update": {
+                "type": "string"
+            },
+            "keyVaultSecretName": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "next_watermark_value": {
+                "type": "String"
+            },
+            "timestamp": {
+                "type": "String"
+            },
+            "folderpath_w_ingestionType": {
+                "type": "String"
+            },
+            "filename_w_timestamp": {
+                "type": "String"
+            },
+            "ingestion_condition": {
+                "type": "String"
+            },
+            "rows_copied_count": {
+                "type": "String"
+            },
+            "load_type": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "SourceToLandingZone/IngestionPatterns"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-26T17:01:27Z"
+    }
+}

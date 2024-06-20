@@ -1,0 +1,42 @@
+{
+    "name": "DS_AzureSQL",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_AzureSQL",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "keyVaultSecretName": {
+                    "value": "@dataset().keyVaultSecretName",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "keyVaultSecretName": {
+                "type": "string"
+            },
+            "schemaName": {
+                "type": "string"
+            },
+            "tableName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "IngestionSources"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schemaName",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().tableName",
+                "type": "Expression"
+            }
+        }
+    }
+}

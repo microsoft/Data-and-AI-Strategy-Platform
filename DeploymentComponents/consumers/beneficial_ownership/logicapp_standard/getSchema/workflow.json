@@ -1,0 +1,253 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_a_SQL_query_(V2)": {
+                "inputs": {
+                    "body": {
+                        "query": "EXEC dbo.schemaDynamic @fileType ='@{triggerBody()?['fileType']}', @filePath = '@{triggerBody()?['path']}';"
+                    },
+                    "host": {
+                        "connection": {
+                            "referenceName": "sql"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('actstax-dev-use2-syn-11-ondemand.sql.azuresynapse.net'))},@{encodeURIComponent(encodeURIComponent('StoredProcDB'))}/query/sql"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@body('Execute_a_SQL_query_(V2)')",
+                    "schema": {
+                        "properties": {
+                            "Table1": {
+                                "items": {
+                                    "properties": {
+                                        "assembly_qualified_type_name": {},
+                                        "collation_name": {},
+                                        "column_ordinal": {
+                                            "type": "integer"
+                                        },
+                                        "is_case_sensitive": {
+                                            "type": "boolean"
+                                        },
+                                        "is_computed_column": {
+                                            "type": "boolean"
+                                        },
+                                        "is_fixed_length_clr_type": {
+                                            "type": "boolean"
+                                        },
+                                        "is_hidden": {
+                                            "type": "boolean"
+                                        },
+                                        "is_identity_column": {
+                                            "type": "boolean"
+                                        },
+                                        "is_nullable": {
+                                            "type": "boolean"
+                                        },
+                                        "is_part_of_unique_key": {
+                                            "type": "boolean"
+                                        },
+                                        "is_sparse_column_set": {
+                                            "type": "boolean"
+                                        },
+                                        "is_updateable": {
+                                            "type": "boolean"
+                                        },
+                                        "is_xml_document": {
+                                            "type": "boolean"
+                                        },
+                                        "max_length": {
+                                            "type": "integer"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "order_by_is_descending": {},
+                                        "order_by_list_length": {},
+                                        "ordinal_in_order_by_list": {},
+                                        "precision": {
+                                            "type": "integer"
+                                        },
+                                        "scale": {
+                                            "type": "integer"
+                                        },
+                                        "source_column": {
+                                            "type": "string"
+                                        },
+                                        "source_database": {},
+                                        "source_schema": {},
+                                        "source_server": {},
+                                        "source_table": {},
+                                        "system_type_id": {
+                                            "type": "integer"
+                                        },
+                                        "system_type_name": {
+                                            "type": "string"
+                                        },
+                                        "tds_collation_id": {},
+                                        "tds_collation_sort_id": {},
+                                        "tds_length": {
+                                            "type": "integer"
+                                        },
+                                        "tds_type_id": {
+                                            "type": "integer"
+                                        },
+                                        "user_type_database": {},
+                                        "user_type_id": {},
+                                        "user_type_name": {},
+                                        "user_type_schema": {},
+                                        "xml_collection_database": {},
+                                        "xml_collection_id": {},
+                                        "xml_collection_name": {},
+                                        "xml_collection_schema": {}
+                                    },
+                                    "required": [
+                                        "is_hidden",
+                                        "column_ordinal",
+                                        "name",
+                                        "is_nullable",
+                                        "system_type_id",
+                                        "system_type_name",
+                                        "max_length",
+                                        "precision",
+                                        "scale",
+                                        "collation_name",
+                                        "user_type_id",
+                                        "user_type_database",
+                                        "user_type_schema",
+                                        "user_type_name",
+                                        "assembly_qualified_type_name",
+                                        "xml_collection_id",
+                                        "xml_collection_database",
+                                        "xml_collection_schema",
+                                        "xml_collection_name",
+                                        "is_xml_document",
+                                        "is_case_sensitive",
+                                        "is_fixed_length_clr_type",
+                                        "source_server",
+                                        "source_database",
+                                        "source_schema",
+                                        "source_table",
+                                        "source_column",
+                                        "is_identity_column",
+                                        "is_part_of_unique_key",
+                                        "is_updateable",
+                                        "is_computed_column",
+                                        "is_sparse_column_set",
+                                        "ordinal_in_order_by_list",
+                                        "order_by_is_descending",
+                                        "order_by_list_length",
+                                        "tds_type_id",
+                                        "tds_length",
+                                        "tds_collation_id",
+                                        "tds_collation_sort_id"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {
+                    "Execute_a_SQL_query_(V2)": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Select')",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "ColumnName": {
+                                    "type": "string"
+                                },
+                                "ColumnOrdinalPosition": {
+                                    "type": "integer"
+                                },
+                                "DataCollation": {},
+                                "DataPrecision": {
+                                    "type": "integer"
+                                },
+                                "DataType": {
+                                    "type": "string"
+                                },
+                                "MaximumLength": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "ColumnName",
+                                "ColumnOrdinalPosition",
+                                "DataCollation",
+                                "DataPrecision",
+                                "DataType",
+                                "MaximumLength"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Select": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "Select": {
+                "inputs": {
+                    "from": "@body('Parse_JSON')?['ResultSets']?['Table1']",
+                    "select": {
+                        "ColumnName": "@item()?['name']",
+                        "ColumnOrdinalPosition": "@item()?['column_ordinal']",
+                        "DataCollation": "@item()?['collation_name']",
+                        "DataPrecision": "@item()?['precision']",
+                        "DataType": "@item()?['system_type_name']",
+                        "MaximumLength": "@item()?['max_length']"
+                    }
+                },
+                "runAfter": {
+                    "Parse_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Select"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "fileType": {
+                                "type": "string"
+                            },
+                            "path": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

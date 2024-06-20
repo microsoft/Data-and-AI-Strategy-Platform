@@ -1,0 +1,106 @@
+name: Consumer-PowerBI-Deployment
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Enviornment
+        required: true
+        type: choice
+        options:
+          - dev
+      ConsumerFolderName:
+        required: true
+        description: 'Consumer Name'
+        default: beneficial_ownership
+        type: choice
+        options:
+          - beneficial_ownership
+
+jobs:
+
+  create-consumer:
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment:
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/consumers/${{ inputs.ConsumerFolderName }}/variables/${{ inputs.environment }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name -eq "Hashtable"){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      - name: Install PowerBI Management Module and Connect to Fabric Workspace and Upload Report
+        run: |
+            Install-Module -Name MicrosoftPowerBIMgmt -Repository PSGallery -Force
+            $Password = ConvertTo-SecureString ${{ secrets.MCAPS_DEV_FABRIC_SPN_SECRET }} -AsPlainText -Force
+            $Credential = New-Object PSCredential ${{ secrets.MCAPS_DEV_FABRIC_SPN_CLIENT_ID }}, $Password
+
+            # Connect to PBI using SPN
+            Connect-PowerBIServiceAccount -Tenant ${{ secrets.MCAPS_DEV_FABRIC_SPN_TENANT_ID }} -ServicePrincipal -Credential $Credential
+
+            # Check if Report Exists
+            $reports = (Invoke-PowerBIRestMethod -Method Get -Url "groups/${{ env.FabricWorkspaceID }}/reports" | ConvertFrom-Json).value
+            $old_dataset_id = ""
+            foreach ($report in $reports){
+                if ($report.name -eq "Transparency_Engine_Report"){
+                    $old_dataset_id = $report.datasetId
+                }
+            }
+            if (![string]::IsNullOrEmpty($old_dataset_id)){
+                # Remove PowerBI report and Dataset
+                Write-Output "Deleting old version of PBI Report and Dataset."
+                Invoke-PowerBIRestMethod -Method Delete -Url "groups/${{ env.FabricWorkspaceID }}/datasets/${old_dataset_id}"
+            }
+
+            Write-Output "Uploading new Report and Dataset."
+            New-PowerBIReport -Path './DeploymentComponents/consumers/beneficial_ownership/powerbi/transparency_engine_result.pbix' -Name 'Transparency_Engine_Report' -WorkspaceId "${{ env.FabricWorkspaceID }}"
+
+            # Get Dataset with Report Name
+            $datasets = (Invoke-PowerBIRestMethod -Method Get -Url "groups/${{ env.FabricWorkspaceID }}/datasets" | ConvertFrom-Json).value
+
+            $dataset_id = ""
+            foreach ($dataset in $datasets){
+                if ($dataset.name -eq "Transparency_Engine_Report"){
+                    $dataset_id = $dataset.id
+                }
+            }
+            if ([string]::IsNullOrEmpty($dataset_id)){
+                throw "Cannot find dataset in Fabric workspace"
+            }
+
+            # Update Parameters on Dataset
+            $BodyPost = @{
+                "updateDetails" = @(
+                @{
+                  "name" = "Database Name"
+                  "newValue" = "${{ env.BeneficalOwnershipGeneratedDataLake }}"
+                },
+                @{
+                  "name"=  "Synapse Workspace Name"
+                  "newValue" = "${{ env.NewSynapseWorkspaceName }}"
+                }
+              )
+            }
+
+            $BodyJson = ConvertTo-Json -InputObject $BodyPost -Depth 10
+
+            Invoke-PowerBIRestMethod -Method Post -Url "groups/${{ env.FabricWorkspaceID }}/datasets/${dataset_id}/Default.UpdateParameters" -Body $BodyJson
+        shell: pwsh

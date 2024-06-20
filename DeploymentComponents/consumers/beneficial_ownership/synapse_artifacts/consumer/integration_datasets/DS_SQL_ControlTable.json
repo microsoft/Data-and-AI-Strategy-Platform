@@ -1,0 +1,20 @@
+{
+	"name": "DS_SQL_ControlTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_Orchestration",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "SQL"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "ControlTable"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

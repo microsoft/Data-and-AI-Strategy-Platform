@@ -1,0 +1,165 @@
+{
+    "name": "PL_3_MoveToStaging_Step3",
+    "properties": {
+        "activities": [
+            {
+                "name": "Add Logging Record",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "NB_MoveToStaging",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                    "storedProcedureParameters": {
+                        "source_filename": {
+                            "value": {
+                                "value": "@pipeline().parameters.source_file",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "source_folderpath": {
+                            "value": {
+                                "value": "@concat(pipeline().parameters.source_folderpath,'/')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "destination_filename": {
+                            "value": {
+                                "value": "Delta Table",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "destination_folderpath": {
+                            "value": {
+                                "value": "@json(pipeline().parameters.SinkObjectSettings).folderPath",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "ingestion_status": {
+                            "value": "Processed",
+                            "type": "String"
+                        },
+                        "pipeline_trigger": {
+                            "value": {
+                                "value": "@pipeline().TriggerName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SQL_MetadataControl",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "NB_MoveToStaging",
+                "type": "DatabricksNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebookPath": "/Shared/NB_Raw_to_Staging",
+                    "baseParameters": {
+                        "raw_folderpath": {
+                            "value": "@pipeline().parameters.source_folderpath",
+                            "type": "Expression"
+                        },
+                        "raw_filename": {
+                            "value": "@pipeline().parameters.source_file",
+                            "type": "Expression"
+                        },
+                        "primary_key_cols": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).primary_key_cols",
+                            "type": "Expression"
+                        },
+                        "partition_cols": {
+                            "value": "@if(equals(json(pipeline().parameters.CopySourceSettings).partition_cols,'')\n    ,'[]'\n    ,json(pipeline().parameters.CopySourceSettings).partition_cols\n)",
+                            "type": "Expression"
+                        },
+                        "date_partition_column": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).date_partition_column",
+                            "type": "Expression"
+                        },
+                        "file_type": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).file_type",
+                            "type": "Expression"
+                        },
+                        "sinkFolderPath": {
+                            "value": "@json(pipeline().parameters.SinkObjectSettings).folderPath",
+                            "type": "Expression"
+                        },
+                        "dataLakeStorageAccountName": {
+                            "value": "@pipeline().globalParameters.dataLakeStorageAccountName",
+                            "type": "Expression"
+                        },
+                        "tableName": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).tableName",
+                            "type": "Expression"
+                        },
+                        "unityCatalogName": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).unityCatalogName",
+                            "type": "Expression"
+                        },
+                        "unitySchemaName": {
+                            "value": "@json(pipeline().parameters.CopySourceSettings).unitySchemaName",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureDatabricks_JobsCompute",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "clusterVersion": "14.3.x-photon-scala2.12",
+                        "clusterNodeType": "Standard_E8ds_v5",
+                        "workerOptions": "2:8"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "source_file": {
+                "type": "string"
+            },
+            "source_folderpath": {
+                "type": "string"
+            },
+            "CopySourceSettings": {
+                "type": "string"
+            },
+            "SinkObjectSettings": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "MoveToStaging"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-02-05T01:38:42Z"
+    }
+}

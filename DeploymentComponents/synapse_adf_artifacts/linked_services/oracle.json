@@ -1,0 +1,29 @@
+{
+    "name": "LS_Oracle",
+    "properties": {
+        "parameters": {
+            "keyVaultSecretName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Oracle",
+        "typeProperties": {
+            "connectionString": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "LS_KeyVault",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": {
+                    "value": "@linkedService().keyVaultSecretName",
+                    "type": "Expression"
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

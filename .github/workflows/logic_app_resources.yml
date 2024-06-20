@@ -1,0 +1,332 @@
+# This is a basic workflow to help you get started with Actions
+
+name: logic-app-resources
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow from another workflow
+  workflow_call:
+    secrets:
+      TENANT_ID:
+        required: true
+      SUBSCRIPTION_ID:
+        required: true
+      SERVICE_PRINCIPAL_CLIENT_ID:
+        required: true
+      DNS_ZONE_SUBSCRIPTION_ID:
+        required: false
+    inputs:
+      DeployLogicApp:
+        required: true
+        type: string
+      DeployLogicAppArtifacts:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      envFolderPath:
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+          
+  create-logic-app-resources:
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        if: ${{ inputs.DeployLogicApp == 'True' || inputs.DeployLogicAppArtifacts == 'True' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        if: ${{ inputs.DeployLogicApp == 'True' || inputs.DeployLogicAppArtifacts == 'True' }}
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/entra_assignments/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Create resource group for environment resources and get service principal name
+      - name: Set Env Variables Needed For Downstream Actions
+        if: ${{ inputs.DeployLogicApp == 'True' || inputs.DeployLogicAppArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $spDetails = az ad sp show --id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" | ConvertFrom-Json  
+
+            # Service Principal Name
+            $servicePrincipalName = $spDetails.appDisplayName
+            Write-Output "::add-mask::$servicePrincipalName"
+            "servicePrincipalName=$servicePrincipalName" >> $env:GITHUB_ENV
+
+            # Service Principal AAD Identity ID
+            $servicePrincipalObjectId = $spDetails.id
+            Write-Output "::add-mask::$servicePrincipalObjectId"
+            "servicePrincipalObjectId=$servicePrincipalObjectId" >> $env:GITHUB_ENV
+
+            # Tags with Single Quotes For Bicep Templates
+            $tags_single_quote = '${{ env.tags }}' -replace '"', "'"
+            "tags_single_quote=$tags_single_quote" >> $env:GITHUB_ENV
+
+
+            if ( '${{ env.Entra_Groups_Data_Publishers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Publishers = '['+ '${{ env.Entra_Groups_Data_Publishers }}' + ']'
+              "Entra_Groups_Data_Publishers=$Entra_Groups_Data_Publishers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Producers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Producers = '['+ '${{ env.Entra_Groups_Data_Producers }}' + ']'
+              "Entra_Groups_Data_Producers=$Entra_Groups_Data_Producers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Consumers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Consumers = '['+ '${{ env.Entra_Groups_Data_Consumers }}' + ']'
+              "Entra_Groups_Data_Consumers=$Entra_Groups_Data_Consumers" >> $env:GITHUB_ENV
+            }
+
+            $Entra_Group_Admin_HashTable = '${{ env.Entra_Group_Admin }}' | ConvertFrom-Json
+            $Entra_Group_Admin_ID = $Entra_Group_Admin_HashTable.Group_ID
+            "Entra_Group_Admin_ID=$Entra_Group_Admin_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Admin_Name = $Entra_Group_Admin_HashTable.Group_Name
+            "Entra_Group_Admin_Name=$Entra_Group_Admin_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_HashTable = '${{ env.Entra_Group_Shared_Service }}' | ConvertFrom-Json
+            $Entra_Group_Shared_Service_ID = $Entra_Group_Shared_Service_HashTable.Group_ID
+            "Entra_Group_Shared_Service_ID=$Entra_Group_Shared_Service_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Shared_Service_Name = $Entra_Group_Shared_Service_HashTable.Group_Name
+            "Entra_Group_Shared_Service_Name=$Entra_Group_Shared_Service_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_HashTable = '${{ env.Entra_Group_Governance }}' | ConvertFrom-Json
+            $Entra_Group_Governance_ID = $Entra_Group_Governance_HashTable.Group_ID
+            "Entra_Group_Governance_ID=$Entra_Group_Governance_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Governance_Name = $Entra_Group_Governance_HashTable.Group_Name
+            "Entra_Group_Governance_Name=$Entra_Group_Governance_Name" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for environment resources and get service principal name
+      - name: Parse Entra Groups for Bicep
+        if: ${{ inputs.DeployLogicApp == 'True' || inputs.DeployLogicAppArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # parse entra groups
+            $Entra_Group_Admin_Json = '${{ env.Entra_Group_Admin }}' -replace '"', "'"
+            "Entra_Group_Admin_Json=$Entra_Group_Admin_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_Json = '${{ env.Entra_Group_Shared_Service }}' -replace '"', "'"
+            "Entra_Group_Shared_Service_Json=$Entra_Group_Shared_Service_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_Json = '${{ env.Entra_Group_Governance }}' -replace '"', "'"
+            "Entra_Group_Governance_Json=$Entra_Group_Governance_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Publishers_Json = '${{ env.Entra_Groups_Data_Publishers }}' -replace '"', "'"
+            "Entra_Groups_Data_Publishers_Json=$Entra_Groups_Data_Publishers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Producers_Json = '${{ env.Entra_Groups_Data_Producers }}' -replace '"', "'"
+            "Entra_Groups_Data_Producers_Json=$Entra_Groups_Data_Producers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Consumers_Json = '${{ env.Entra_Groups_Data_Consumers }}' -replace '"', "'"
+            "Entra_Groups_Data_Consumers_Json=$Entra_Groups_Data_Consumers_Json" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      - name: Deploy App Insights for Logic App
+        if: ${{ inputs.DeployLogicApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.LogicAppRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/appinsights.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/logicapp_appinsights.json
+            location=${{ env.azureResourceLocation }}
+            appInsightsName=${{ env.logicAppInsightsName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+          failOnStdErr: false
+
+      - name: Deploy Logic App Storage Account
+        if: ${{ inputs.DeployLogicApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.LogicAppRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/storageaccount.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/logicapp_storage.json
+            location=${{ env.azureResourceLocation }}
+            storageAccountName=${{ env.logicAppStorageName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }}      
+          failOnStdErr: false
+
+      - name: Deploy App Service Plan for Logic App
+        if: ${{ inputs.DeployLogicApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.LogicAppRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/app_service_plan_windows.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/logicapp_app_service_plan.json
+            location=${{ env.azureResourceLocation }}
+            appServicePlanName=${{ env.logicAppServicePlanName }} 
+          failOnStdErr: false
+
+      - name: Deploy Logic App
+        if: ${{ inputs.DeployLogicApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.LogicAppRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/logicapp_standard.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/logicapp_standard.json
+            location=${{ env.azureResourceLocation }}
+            logicAppName=${{ env.logicAppName }} 
+            logicAppServicePlanName=${{ env.logicAppServicePlanName }} 
+            logicAppAppInsights=${{ env.logicAppInsightsName }} 
+            logicAppStorage=${{ env.logicAppStorageName }} 
+            azureSQLServerName=${{ env.azureSQLServerName }} 
+            azureSQLServerDBName=${{ env.azureSQLServerDBName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            VnetForResourcesRgName=${{ env.VnetForResourcesRgName }}
+            VnetForResourcesName=${{ env.VnetForResourcesName }}
+            DeployLogicAppInVnet=${{ env.DeployLogicAppInVnet }}
+            LogicAppSubnetName=${{ env.LogicAppSubnetName }}
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            storageAccountName=${{ env.logicAppStorageName }} 
+            landingStorageName=${{ env.landingStorageName }}
+            dataLakeName=${{ env.dataLakeName }} 
+            PrimaryRgName=${{ env.PrimaryRgName }}
+          failOnStdErr: false
+          
+      # Deploy Logic App
+      - name: Deploy Logic App Workflows
+        if: ${{ inputs.DeployLogicAppArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |            
+            $sqlManagedConn = Get-AzResource -ResourceType "Microsoft.Web/connections" -Name "LogicAppSqlConn" -ResourceGroup "${{ env.LogicAppRgName }}" -ExpandProperties
+            $connectionRuntimeURL = $sqlManagedConn.properties.connectionRuntimeURL 
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'resourceGroupName', '${{ env.LogicAppRgName }}' | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'AzureResourceLocation', '${{ env.azureResourceLocation }}' | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'mainSynapse', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'mainSQL', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/connections.json) -Replace 'ReplaceConnectionRuntimeUrl', "$connectionRuntimeURL" | Set-Content ./DeploymentComponents/logicapp_standard/connections.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/getSchema/workflow.json) -Replace 'mainSynapse', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/logicapp_standard/getSchema/workflow.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/MappingServiceIngestion/workflow.json) -Replace 'mainSQL', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/logicapp_standard/MappingServiceIngestion/workflow.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/la_PackagePayloadConfigurator/workflow.json) -Replace 'mainSQL', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/logicapp_standard/la_PackagePayloadConfigurator/workflow.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json) -Replace 'INSERTSUBID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json) -Replace 'INSERTRGNAME', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json
+            (Get-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json) -Replace 'INSERTADFNAME', '${{ env.dataFactoryName }}' | Set-Content ./DeploymentComponents/logicapp_standard/handshakeSubmit/workflow.json
+            Compress-Archive -Path ./DeploymentComponents/logicapp_standard/* -DestinationPath ./DeploymentComponents/logicapp_standard/logicapp.zip
+            
+            # deploy without package first so iterative development can be conducted easily
+            $setting=@{"WEBSITE_RUN_FROM_PACKAGE"="0"}
+            Update-AzFunctionAppSetting -Name '${{ env.logicAppName }}' -ResourceGroupName '${{ env.LogicAppRgName }}' -AppSetting $setting
+            az logicapp deployment source config-zip --name ${{ env.logicAppName }} --resource-group ${{ env.LogicAppRgName }} --src ./DeploymentComponents/logicapp_standard/logicapp.zip
+            
+            # deploy with package second if logic app is within VNET
+            if("${{ env.DeployWithCustomNetworking }}" -eq "True"){
+              $setting=@{"WEBSITE_RUN_FROM_PACKAGE"="1"}
+              Update-AzFunctionAppSetting -Name '${{ env.logicAppName }}' -ResourceGroupName '${{ env.LogicAppRgName }}' -AppSetting $setting
+              az logicapp deployment source config-zip --name ${{ env.logicAppName }} --resource-group ${{ env.LogicAppRgName }} --src ./DeploymentComponents/logicapp_standard/logicapp.zip
+              $setting=@{"WEBSITE_RUN_FROM_PACKAGE"="0"}
+              Update-AzFunctionAppSetting -Name '${{ env.logicAppName }}' -ResourceGroupName '${{ env.LogicAppRgName }}' -AppSetting $setting
+            }
+          azPSVersion: "latest"

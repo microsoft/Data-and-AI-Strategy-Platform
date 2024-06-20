@@ -1,0 +1,176 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_EditDataContract",
+                        "storedProcedureParameters": {
+                            "jsonBody": "@variables('JsonBody')"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "jsonBody",
+                            "type": "string",
+                            "value": "@{triggerBody()}"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "BusinessContact": {
+                                    "type": "string"
+                                },
+                                "BusinessContactEmail": {
+                                    "type": "string"
+                                },
+                                "BusinessContactObjID": {
+                                    "type": "string"
+                                },
+                                "BusinessContactUPN": {
+                                    "type": "string"
+                                },
+                                "ContractID": {
+                                    "type": "string"
+                                },
+                                "DataClassificationLevel": {
+                                    "type": "string"
+                                },
+                                "DataNameFriendly": {
+                                    "type": "string"
+                                },
+                                "DataNameSystem": {
+                                    "type": "string"
+                                },
+                                "DataOwner": {
+                                    "type": "string"
+                                },
+                                "DataOwnerEmail": {
+                                    "type": "string"
+                                },
+                                "DataOwnerObjID": {
+                                    "type": "string"
+                                },
+                                "DataOwnerUPN": {
+                                    "type": "string"
+                                },
+                                "Description": {
+                                    "type": "string"
+                                },
+                                "EditedBy": {
+                                    "type": "string"
+                                },
+                                "EditedByEmail": {
+                                    "type": "string"
+                                },
+                                "EditedById": {
+                                    "type": "string"
+                                },
+                                "EditedByUPN": {
+                                    "type": "string"
+                                },
+                                "EngineeringContact": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactEmail": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactObjID": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactUPN": {
+                                    "type": "string"
+                                },
+                                "Format": {
+                                    "type": "string"
+                                },
+                                "Metadata": {
+                                    "type": "string"
+                                },
+                                "Pattern": {
+                                    "type": "string"
+                                },
+                                "PublisherName": {
+                                    "type": "string"
+                                },
+                                "Restrictions": {
+                                    "type": "string"
+                                },
+                                "SourceSystem": {
+                                    "type": "string"
+                                },
+                                "SubjectArea": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "BusinessContact",
+                                "BusinessContactEmail",
+                                "BusinessContactObjID",
+                                "BusinessContactUPN",
+                                "ContractID",
+                                "DataClassificationLevel",
+                                "DataNameFriendly",
+                                "DataNameSystem",
+                                "DataOwner",
+                                "DataOwnerEmail",
+                                "DataOwnerObjID",
+                                "DataOwnerUPN",
+                                "Description",
+                                "EditedBy",
+                                "EditedByEmail",
+                                "EditedById",
+                                "EditedByUPN",
+                                "EngineeringContact",
+                                "EngineeringContactEmail",
+                                "EngineeringContactObjID",
+                                "EngineeringContactUPN",
+                                "Format",
+                                "Metadata",
+                                "Pattern",
+                                "PublisherName",
+                                "Restrictions",
+                                "SourceSystem",
+                                "SubjectArea"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

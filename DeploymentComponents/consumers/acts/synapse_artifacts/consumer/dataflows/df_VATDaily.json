@@ -1,0 +1,50 @@
+{
+    "name": "df_VATDaily",
+    "properties": {
+        "description": "Dataflow to transform Vat daily data from the 'curated' zone and time-stamp to the 'staging' zone",
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "VatDailySource",
+                    "description": "Vat Daily source dataset"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "VatDailySink"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'curated',",
+                "     wildcardPaths:['AdditionalDataModel/VATDailyDB/*.parquet']) ~> VatDailySource",
+                "VatDailySource sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     folderPath: (concat('VATDaily/', concatWS('-', toString(year(currentTimestamp())), toString(month(currentTimestamp())), toString(dayOfMonth(currentTimestamp()))))),",
+                "     truncate: true,",
+                "     compressionCodec: 'none',",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     saveOrder: 1) ~> VatDailySink"
+            ]
+        }
+    }
+}

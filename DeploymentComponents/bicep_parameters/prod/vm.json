@@ -1,0 +1,46 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachineSize": {
+            "value": "Standard_B2ms"
+        },
+        "enableAcceleratedNetworking": {
+            "value": false
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "vmImagePublisher": {
+            "value": "microsoftwindowsdesktop"
+        },
+        "vmImageOffer": {
+            "value": "windows-11"
+        },
+        "vmImageSku": {
+            "value": "win11-22h2-ent"
+        },
+        "vmImageVersion": {
+            "value": "latest"
+        },
+        "osDiskDeleteOption": {
+            "value": "Delete"
+        },
+        "nicDeleteOption": {
+            "value": "Delete"
+        },
+        "patchMode": {
+            "value": "AutomaticByOS"
+        },
+        "enableHotpatching": {
+            "value": false
+        },
+        "zones": {
+            "value": [
+              "1"
+            ]
+        }
+    }
+}

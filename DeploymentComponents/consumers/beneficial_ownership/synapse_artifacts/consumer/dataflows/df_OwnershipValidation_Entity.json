@@ -1,0 +1,142 @@
+{
+    "name": "df_OwnershipValidation_Entity",
+    "properties": {
+        "folder": {
+            "name": "BeneficialOwnership/df_Validation"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "getJson"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sinkActivity"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "rename"
+                },
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "unpivot1"
+                },
+                {
+                    "name": "select6"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "filter2"
+                },
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "select7"
+                },
+                {
+                    "name": "derivedColumn2"
+                },
+                {
+                    "name": "filter3"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          statementID as string,",
+                "          statementType as string,",
+                "          name as string,",
+                "          addressesaddress as string,",
+                "          addressescountry as string,",
+                "          addressestype as string,",
+                "          identifiersid as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Entity/Flattened/*']) ~> getJson",
+                "unpivot1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value = address",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> rename",
+                "getJson select(mapColumn(",
+                "          statement_id = statementID,",
+                "          statement_type = statementType,",
+                "          entity_name = name,",
+                "          addresses_address = addressesaddress,",
+                "          addresses_country = addressescountry,",
+                "          addresses_type = addressestype,",
+                "          identifiers_id = identifiersid",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select6 unpivot(output(",
+                "          AttributeID as string,",
+                "          address as string,",
+                "          name as string,",
+                "          website as string",
+                "     ),",
+                "     ungroupBy(EntityID),",
+                "     lateral: true,",
+                "     ignoreNullPivots: false) ~> unpivot1",
+                "derivedColumn2 select(mapColumn(",
+                "          name = entity_name,",
+                "          address = addresses_address,",
+                "          website,",
+                "          EntityID = identifiers_id",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select6",
+                "rename derive(Value = lower(Value)) ~> derivedColumn1",
+                "select7 filter(not(isNull(Value)) && length(Value) > 2",
+                "&& not(like(Value, '%?%') )) ~> filter2",
+                "derivedColumn1 aggregate(groupBy(EntityID,",
+                "          AttributeID,",
+                "          Value),",
+                "     count = count()) ~> aggregate1",
+                "aggregate1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select7",
+                "filter3 derive(addresses_address = concat(addresses_address, \" \", addresses_country),",
+                "          website = concat(\"https://opencorporates.com\", identifiers_id),",
+                "          identifiers_id = split(identifiers_id,'/')[3]) ~> derivedColumn2",
+                "select1 filter(startsWith(identifiers_id, '/company/')) ~> filter3",
+                "filter2 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     folderPath: 'BeneficialOwnership/OpenData/Ownership/Entity/OwnershipDF_Processed/OpenData',",
+                "     truncate: true,",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> sinkActivity"
+            ]
+        }
+    }
+}

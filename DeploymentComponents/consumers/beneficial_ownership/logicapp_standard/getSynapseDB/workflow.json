@@ -1,0 +1,101 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT * FROM sys.databases WHERE [name] NOT IN ('default','master','StoredProcDB')"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql3",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Select')",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "collation_name": {
+                                    "type": "string"
+                                },
+                                "compatibility_level": {
+                                    "type": "integer"
+                                },
+                                "create_date": {
+                                    "type": "string"
+                                },
+                                "database_id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "owner_sid": {
+                                    "type": "string"
+                                },
+                                "physical_database_name": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "collation_name",
+                                "compatibility_level",
+                                "create_date",
+                                "database_id",
+                                "name",
+                                "owner_sid",
+                                "physical_database_name"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Select": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "Select": {
+                "inputs": {
+                    "from": "@body('Execute_query')[0]",
+                    "select": {
+                        "collation_name": "@item()?['collation_name']",
+                        "compatibility_level": "@item()?['compatibility_level']",
+                        "create_date": "@item()?['create_date']",
+                        "database_id": "@item()?['database_id']",
+                        "name": "@item()?['name']",
+                        "owner_sid": "@item()?['owner_sid']",
+                        "physical_database_name": "@item()?['physical_database_name']"
+                    }
+                },
+                "runAfter": {
+                    "Execute_query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Select"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

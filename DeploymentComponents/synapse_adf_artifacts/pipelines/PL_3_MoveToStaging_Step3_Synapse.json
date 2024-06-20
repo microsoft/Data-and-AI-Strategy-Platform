@@ -1,0 +1,182 @@
+{
+    "name": "PL_3_MoveToStaging_Step3",
+    "properties": {
+        "activities": [
+            {
+                "name": "NB_MoveToStaging",
+                "type": "SynapseNotebook",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": {
+                            "value": "NB_Raw_to_Staging",
+                            "type": "Expression"
+                        },
+                        "type": "NotebookReference"
+                    },
+                    "parameters": {
+                        "raw_folderpath": {
+                            "value": {
+                                "value": "@pipeline().parameters.source_folderpath",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "raw_filename": {
+                            "value": {
+                                "value": "@pipeline().parameters.source_file",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "primary_key_cols": {
+                            "value": {
+                                "value": "@pipeline().parameters.primary_key_cols",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "partition_cols": {
+                            "value": {
+                                "value": "@if(equals(pipeline().parameters.partition_cols,''),'[]',pipeline().parameters.partition_cols)",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "date_partition_column": {
+                            "value": {
+                                "value": "@pipeline().parameters.date_partition_column",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        },
+                        "file_type": {
+                            "value": {
+                                "value": "@pipeline().parameters.file_type",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "conf": {
+                        "spark.dynamicAllocation.enabled": null,
+                        "spark.dynamicAllocation.minExecutors": null,
+                        "spark.dynamicAllocation.maxExecutors": null
+                    },
+                    "numExecutors": null
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_Synapse",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Add Logging Record",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "NB_MoveToStaging",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                    "storedProcedureParameters": {
+                        "source_filename": {
+                            "value": {
+                                "value": "@pipeline().parameters.source_file",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "source_folderpath": {
+                            "value": {
+                                "value": "@concat(pipeline().parameters.source_folderpath,'/')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "destination_filename": {
+                            "value": {
+                                "value": "@pipeline().parameters.sink_file",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "destination_folderpath": {
+                            "value": {
+                                "value": "@activity('NB_MoveToStaging').output.status.Output.result.exitValue",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "ingestion_status": {
+                            "value": "Processed",
+                            "type": "String"
+                        },
+                        "pipeline_trigger": {
+                            "value": {
+                                "value": "@pipeline().TriggerName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SQL_MetadataControl",
+                    "type": "LinkedServiceReference"
+                }
+            }
+        ],
+        "parameters": {
+            "source_file": {
+                "type": "string"
+            },
+            "source_folderpath": {
+                "type": "string"
+            },
+            "sink_folderpath": {
+                "type": "string"
+            },
+            "sink_file": {
+                "type": "string"
+            },
+            "primary_key_cols": {
+                "type": "string"
+            },
+            "partition_cols": {
+                "type": "string"
+            },
+            "date_partition_column": {
+                "type": "string"
+            },
+            "file_type": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "MoveToStaging"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-23T17:49:45Z"
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "properties": {
+        "annotations": [],
+        "type": "AzureBlobFS",
+        "typeProperties": {
+            "url": "https://storageAccountName.dfs.core.windows.net/",
+            "tenant": "inputTenantID",
+            "servicePrincipalId": "FILLINPOSTDEPLOYMENT",
+            "servicePrincipalCredentialType": "ServicePrincipalKey",
+            "servicePrincipalCredential": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "LS_KeyVault",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": "FILLINPOSTDEPLOYMENT"
+            }
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

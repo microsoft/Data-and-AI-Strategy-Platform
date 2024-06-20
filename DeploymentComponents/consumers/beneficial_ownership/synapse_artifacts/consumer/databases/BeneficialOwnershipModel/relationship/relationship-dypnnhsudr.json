@@ -1,0 +1,26 @@
+{
+	"name": "relationship-dypnnhsudr",
+	"properties": {
+		"Name": "relationship-dypnnhsudr",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "EntityRedFlag",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "1544965c-a3f1-47ea-99e7-3309053aaec0"
+	},
+	"type": "RELATIONSHIP"
+}

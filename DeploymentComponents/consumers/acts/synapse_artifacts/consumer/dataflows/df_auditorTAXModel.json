@@ -1,0 +1,52 @@
+{
+    "name": "df_auditorTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "auditor"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "AuditorTaxModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> auditor",
+                "auditor sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'Auditor') ~> AuditorTaxModel"
+            ]
+        }
+    }
+}

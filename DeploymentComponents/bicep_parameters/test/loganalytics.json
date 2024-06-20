@@ -1,0 +1,35 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "publicNetworkAccessForIngestion": {
+        "value": "Enabled"
+      },
+      "publicNetworkAccessForQuery": {
+        "value": "Disabled"
+      },
+      "sku_name": {
+        "value": "PerGB2018"
+      },
+      "disableLocalAuth": {
+        "value": false
+      },
+      "enableDataExport": {
+        "value": true
+      },
+      "enableLogAccessUsingOnlyResourcePermissions": {
+        "value": true
+      },
+      "immediatePurgeDataOn30Days": {
+        "value": false
+      },
+      "retentionInDays": {
+        "value": 90
+      },
+      "dailyQuotaGb": {
+        "value": -1
+      }
+    }
+  }

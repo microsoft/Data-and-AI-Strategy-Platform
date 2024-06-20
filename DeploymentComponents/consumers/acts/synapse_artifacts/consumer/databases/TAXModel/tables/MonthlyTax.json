@@ -1,0 +1,776 @@
+{
+	"name": "MonthlyTax",
+	"properties": {
+		"Name": "MonthlyTax",
+		"EntityType": "TABLE",
+		"TableType": "EXTERNAL",
+		"Namespace": {
+			"SchemaName": null,
+			"DatabaseName": "TAXModel",
+			"DatabaseId": null
+		},
+		"StorageDescriptor": {
+			"Distribution": null,
+			"Columns": [
+				{
+					"Name": "ID",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "ReportingPeriod",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 8000,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					}
+				},
+				{
+					"Name": "IncomeTax",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "IncomeTaxTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "ValueAddedTax",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "ValueAddedTaxTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "CorporationTax",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "CorporationTaxTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatDigital",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatDigitalPredicted",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatDigitalTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatPhysical",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatPredicted",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatPhysicalTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxPayerComplaints",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxPayerComplaintsTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatOverall",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatOverallTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatOverallPredicted",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxReturnMail",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxReturnMailTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "PctPhysicalTaxReturnResponse15Days",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctPhysicalTaxReturnResponse15DaysTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxReturnInOffice",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxReturnInOfficeTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxPayerCalls",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "TaxPayerCallAnswerTime",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxPayerCallWaiting10MinOrMore",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTier1Complaints",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTier2Complaints",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "CntTaxReturnDigital",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					}
+				},
+				{
+					"Name": "PctDigialTaxReturnOutOfOverall",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctDigialTaxReturnOutOfOverallTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctDigitalTaxReturnResponse7Days",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctDigitalTaxReturnResponse7DaysTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxReturnAmended",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxReturnAmendedTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxReturnAudited",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxReturnAuditedTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatChangeNextMonth",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerCsatChangeNextMonthTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerComplaintsChangeNextMonth",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerComplaintsChangeNextMonthTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerTrafficInOfficesChangeNextMonth",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerTrafficInOfficesChangeNextMonthTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerTrafficDigitalChangeNextMonth",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				},
+				{
+					"Name": "PctTaxPayerTrafficDigitalChangeNextMonthTarget",
+					"Description": null,
+					"OriginDataTypeName": {
+						"TypeName": "double",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 0,
+						"Precision": 0,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "double"
+						}
+					}
+				}
+			],
+			"ColumnSetEntityName": "925887bf-1d26-4cd4-ab16-5a0bd6db66b5",
+			"Format": {
+				"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+				"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+				"FormatType": "parquet",
+				"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+				"Properties": {
+					"path": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/TAXModel/MonthlyTax",
+					"FormatTypeSetToDatabaseDefault": true
+				}
+			},
+			"Source": {
+				"Provider": "ADLS",
+				"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/TAXModel/MonthlyTax",
+				"Properties": {
+					"LinkedServiceName": "LS_DataLake",
+					"LocationSetToDatabaseDefault": true
+				}
+			},
+			"Properties": {
+				"textinputformat.record.delimiter": ",",
+				"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+				"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
+			},
+			"Compressed": false,
+			"SerDeInfo": null,
+			"IsStoredAsSubdirectories": false
+		},
+		"Owner": null,
+		"CreateTime": 0,
+		"LastAccessTime": 0,
+		"Retention": 0,
+		"Temporary": false,
+		"IsRewriteEnabled": false,
+		"ViewOriginalText": null,
+		"ViewExpandedText": null,
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"OriginObjectId": null,
+		"IsSharedEntity": false,
+		"PublishStatus": "PUBLISHED",
+		"Properties": {
+			"Description": "",
+			"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
+			"PrimaryKeys": "",
+			"spark.sql.sources.provider": "parquet",
+			"spark.sql.sources.schema.numParts": "1",
+			"spark.sql.sources.schema.part.0": "{\"type\":\"struct\",\"fields\":[{\"name\":\"ID\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ReportingPeriod\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"IncomeTax\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"IncomeTaxTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ValueAddedTax\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"ValueAddedTaxTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CorporationTax\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CorporationTaxTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatDigital\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatDigitalPredicted\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatDigitalTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatPhysical\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatPredicted\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatPhysicalTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxPayerComplaints\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxPayerComplaintsTarget\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatOverall\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatOverallTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatOverallPredicted\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxReturnMail\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxReturnMailTarget\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctPhysicalTaxReturnResponse15Days\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctPhysicalTaxReturnResponse15DaysTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxReturnInOffice\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxReturnInOfficeTarget\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxPayerCalls\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"TaxPayerCallAnswerTime\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxPayerCallWaiting10MinOrMore\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTier1Complaints\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTier2Complaints\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"CntTaxReturnDigital\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctDigialTaxReturnOutOfOverall\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctDigialTaxReturnOutOfOverallTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctDigitalTaxReturnResponse7Days\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctDigitalTaxReturnResponse7DaysTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxReturnAmended\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxReturnAmendedTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxReturnAudited\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxReturnAuditedTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatChangeNextMonth\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerCsatChangeNextMonthTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerComplaintsChangeNextMonth\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerComplaintsChangeNextMonthTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerTrafficInOfficesChangeNextMonth\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerTrafficInOfficesChangeNextMonthTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerTrafficDigitalChangeNextMonth\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}},{\"name\":\"PctTaxPayerTrafficDigitalChangeNextMonthTarget\",\"type\":\"double\",\"nullable\":true,\"metadata\":{}}]}"
+		},
+		"ObjectVersion": 9,
+		"ObjectId": "307af6f2-ea0e-4867-a378-d36991c887a2",
+		"Description": ""
+	},
+	"type": "TABLE"
+}

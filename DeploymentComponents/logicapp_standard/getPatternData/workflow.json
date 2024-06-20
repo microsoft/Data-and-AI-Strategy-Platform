@@ -1,0 +1,117 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT * FROM [dbo].[PatternTable]"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_query')[0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Active": {
+                                    "type": "boolean"
+                                },
+                                "Area": {
+                                    "type": "string"
+                                },
+                                "ColumnType": {
+                                    "type": "string"
+                                },
+                                "DataSourceSystem": {
+                                    "type": "string"
+                                },
+                                "DataSourceType": {
+                                    "type": "string"
+                                },
+                                "Description": {
+                                    "type": "string"
+                                },
+                                "ID": {
+                                    "type": "integer"
+                                },
+                                "Icon": {
+                                    "type": "string"
+                                },
+                                "LabelName": {
+                                    "type": "string"
+                                },
+                                "Name": {
+                                    "type": "string"
+                                },
+                                "PatternType": {
+                                    "type": "string"
+                                },
+                                "Screen": {
+                                    "type": "string"
+                                },
+                                "choices": {
+                                    "type": "string"
+                                },
+                                "columnValue": {},
+                                "required": {
+                                    "type": "boolean"
+                                },
+                                "visible": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "ID",
+                                "PatternType",
+                                "LabelName",
+                                "Name",
+                                "ColumnType",
+                                "required",
+                                "choices",
+                                "Area",
+                                "Screen",
+                                "Icon",
+                                "DataSourceType",
+                                "DataSourceSystem",
+                                "Description",
+                                "Active",
+                                "visible",
+                                "columnValue"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "Execute_query": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

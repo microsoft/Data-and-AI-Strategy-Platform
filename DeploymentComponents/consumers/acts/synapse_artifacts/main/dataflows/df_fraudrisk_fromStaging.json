@@ -1,0 +1,113 @@
+{
+	"name": "df_fraudrisk_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"name": "Taxpayer"
+				}
+			],
+			"sinks": [
+				{
+					"name": "FraudRisk"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          FraudRiskId as string,",
+				"          OriginalFraudRiskID as string,",
+				"          CustomerID as string,",
+				"          FraudRiskFactor as string,",
+				"          FraudRiskScore as string,",
+				"          FraudRiskDate as string,",
+				"          Sector as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/FraudRiskOutput/*']) ~> source1",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality1 as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"source1 filter(not(isNull(CustomerID))) ~> filter1",
+				"derivedColumn1 select(mapColumn(",
+				"          FraudRiskId,",
+				"          OriginalFraudRiskID,",
+				"          CustomerID,",
+				"          FraudRiskFactor,",
+				"          FraudRiskScore,",
+				"          FraudRiskDate = {Month Year},",
+				"          Sector",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"filter1 keyGenerate(output(FraudRiskId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"join1 derive({Month Year} = toDate({FraudRiskDate})) ~> derivedColumn1",
+				"surrogateKey1, Taxpayer join(CustomerID == OriginalTaxpayerID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'FraudRiskOutput') ~> FraudRisk"
+			]
+		}
+	}
+}

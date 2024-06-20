@@ -1,0 +1,308 @@
+{
+    "name": "PL_2_Process_Landed_Files_Step1",
+    "properties": {
+        "activities": [
+            {
+                "name": "Step 2 Pipeline",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "If Event Log Trigger",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_2_Process_Landed_Files_Step2",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "sourceFolder": {
+                            "value": "@variables('sourceFolderPathUpdated')",
+                            "type": "Expression"
+                        },
+                        "sourceFile": {
+                            "value": "@variables('sourceFileNameUpdated')",
+                            "type": "Expression"
+                        },
+                        "triggerName": {
+                            "value": "@pipeline().TriggerName",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Set Logging Record to Failed",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Step 2 Pipeline",
+                        "dependencyConditions": [
+                            "Failed",
+                            "Skipped"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                    "storedProcedureParameters": {
+                        "source_filename": {
+                            "value": {
+                                "value": "@variables('sourceFileNameUpdated')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "source_folderpath": {
+                            "value": {
+                                "value": "@variables('sourceFolderPathUpdated')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "ingestion_status": {
+                            "value": "Failed",
+                            "type": "String"
+                        },
+                        "pipeline_id": {
+                            "value": {
+                                "value": "@pipeline().RunId",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "id_to_update": {
+                            "value": "0",
+                            "type": "Int32"
+                        },
+                        "pipeline_trigger": {
+                            "value": {
+                                "value": "@pipeline().TriggerName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SQL_MetadataControl",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "If Event Log Trigger",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Event Log Trigger Flag",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@startswith(pipeline().parameters.sourceFolder, 'landing/ingested_data_log/')",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "No Change to File Name",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceFileNameUpdated",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceFile",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Add Slash at End of Folder Path",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "No Change to File Name",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceFolderPathUpdated",
+                                "value": {
+                                    "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Log File Details",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "DelimitedTextSource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": false,
+                                        "enablePartitionDiscovery": false
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextReadSettings"
+                                    }
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_Landing_DelimitedText_File_HeaderTrue",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": "landing",
+                                        "folderPath": {
+                                            "value": "@if(contains(pipeline().parameters.sourceFolder,'/'),\nconcat(substring(pipeline().parameters.sourceFolder, 8, add(length(pipeline().parameters.sourceFolder),-8)),'/')\n,'')",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@pipeline().parameters.sourceFile",
+                                            "type": "Expression"
+                                        },
+                                        "encoding": "UTF-8",
+                                        "firstRowHeader": true,
+                                        "delimiter": ",",
+                                        "compression": "None"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update File Name",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Log File Details",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceFileNameUpdated",
+                                "value": {
+                                    "value": "@activity('Get Log File Details').output.firstRow.fileName",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update Folder Path",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Update File Name",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceFolderPathUpdated",
+                                "value": {
+                                    "value": "@concat('landing/',activity('Get Log File Details').output.firstRow.folderPath)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Event Log Trigger Flag",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "eventLogTrigger",
+                    "value": {
+                        "value": "@if(startswith(pipeline().parameters.sourceFolder, 'landing/ingested_data_log/')\n,true\n,false\n)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "eventLogTrigger": {
+                "type": "Boolean"
+            },
+            "sourceFolderPathUpdated": {
+                "type": "String"
+            },
+            "sourceFileNameUpdated": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-02-07T22:20:33Z"
+    }
+}

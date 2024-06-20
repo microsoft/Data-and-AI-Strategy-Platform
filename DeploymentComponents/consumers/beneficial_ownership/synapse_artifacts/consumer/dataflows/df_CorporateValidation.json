@@ -1,0 +1,229 @@
+{
+    "name": "df_CorporateValidation",
+    "properties": {
+        "folder": {
+            "name": "BeneficialOwnership/df_Validation"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "getCsvCorp1"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sinkCorporate2"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "parquetSinkCorporate"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "assert2"
+                },
+                {
+                    "name": "derivedColumn2"
+                },
+                {
+                    "name": "split2"
+                },
+                {
+                    "name": "combineAddress"
+                },
+                {
+                    "name": "select3"
+                },
+                {
+                    "name": "cleanupFields"
+                },
+                {
+                    "name": "unpivot"
+                },
+                {
+                    "name": "select5"
+                },
+                {
+                    "name": "derivedColumn4"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "select6"
+                },
+                {
+                    "name": "filter4"
+                }
+            ],
+            "scriptLines": [
+                "parameters{",
+                "     raw_folderpath as string (\"BeneficialOwnership/OpenData/OpenCorporate/AllData/v1/full/2023/06/22\"),",
+                "     raw_filename as string (\"companies.csv\"),",
+                "     country_name_alternatives as string (\"za\")",
+                "}",
+                "source(output(",
+                "          company_number as string,",
+                "          jurisdiction_code as string,",
+                "          name as string,",
+                "          normalised_name as string,",
+                "          company_type as string,",
+                "          nonprofit as boolean,",
+                "          current_status as string,",
+                "          incorporation_date as string,",
+                "          dissolution_date as string,",
+                "          branch as string,",
+                "          business_number as string,",
+                "          current_alternative_legal_name as string,",
+                "          current_alternative_legal_name_language as string,",
+                "          home_jurisdiction_text as string,",
+                "          native_company_number as string,",
+                "          previous_names as string,",
+                "          retrieved_at as string,",
+                "          registry_url as string,",
+                "          restricted_for_marketing as string,",
+                "          inactive as boolean,",
+                "          accounts_next_due as string,",
+                "          accounts_reference_date as string,",
+                "          accounts_last_made_up_date as string,",
+                "          annual_return_next_due as string,",
+                "          annual_return_last_made_up_date as string,",
+                "          has_been_liquidated as string,",
+                "          has_insolvency_history as string,",
+                "          has_charges as string,",
+                "          number_of_employees as string,",
+                "          {registered_address.street_address} as string,",
+                "          {registered_address.locality} as string,",
+                "          {registered_address.region} as string,",
+                "          {registered_address.postal_code} as string,",
+                "          {registered_address.country} as string,",
+                "          {registered_address.in_full} as string,",
+                "          home_jurisdiction_code as string,",
+                "          home_jurisdiction_company_number as string,",
+                "          industry_code_uids as string,",
+                "          latest_accounts_date as string,",
+                "          latest_accounts_cash as string,",
+                "          latest_accounts_assets as string,",
+                "          latest_accounts_liabilities as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: 'BeneficialOwnership/OpenData/OpenCorporate/v1/full/2023/06/22',",
+                "     fileName: 'companies.csv',",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true) ~> getCsvCorp1",
+                "filter4 select(mapColumn(",
+                "          company_number,",
+                "          normalised_name,",
+                "          company_type,",
+                "          registry_url,",
+                "          {registered_address.street_address},",
+                "          {registered_address.locality},",
+                "          {registered_address.region},",
+                "          {registered_address.postal_code},",
+                "          {registered_address.country},",
+                "          {registered_address.in_full}",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 assert(expectTrue(not(isNull(registry_url)) && not(isNull({registered_address.in_full})) && not(isNull(normalised_name)) && not(isNull(company_number)), false, 'assert_null', null, \"assert nulls\")) ~> assert2",
+                "assert2 derive(hasError = at(assertErrorMessages(),'assert_null')) ~> derivedColumn2",
+                "derivedColumn2 split(hasError == 'validating nulls',",
+                "     disjoint: false) ~> split2@(nullRecords1, cleanRecords1)",
+                "split2@cleanRecords1 derive(company_number_combined = coalesce(company_number),",
+                "          address_combined = coalesce({registered_address.in_full})) ~> combineAddress",
+                "combineAddress select(mapColumn(",
+                "          name = normalised_name,",
+                "          website = registry_url,",
+                "          address = address_combined,",
+                "          EntityID = company_number_combined",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select3",
+                "select3 derive(address = lower(replace(address,  \"[\\\"\\'*()-:;,#]\", \"\")),",
+                "          EntityID = lower(replace(EntityID,  \"[\\\"\\'*()-:;,#]\", \"\"))) ~> cleanupFields",
+                "cleanupFields unpivot(output(",
+                "          AttributeID as string,",
+                "          name as string,",
+                "          address as string,",
+                "          website as string",
+                "     ),",
+                "     ungroupBy(EntityID),",
+                "     lateral: true,",
+                "     ignoreNullPivots: false) ~> unpivot",
+                "unpivot select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value = name",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select5",
+                "select5 derive(Value = lower(Value)) ~> derivedColumn4",
+                "select6 filter(not(isNull(Value)) && length(Value) > 2) ~> filter1",
+                "derivedColumn4 aggregate(groupBy(EntityID,",
+                "          AttributeID,",
+                "          Value),",
+                "     count = count()) ~> aggregate1",
+                "aggregate1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select6",
+                "getCsvCorp1 filter(jurisdiction_code == $country_name_alternatives) ~> filter4",
+                "split2@nullRecords1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'staging',",
+                "     folderPath: 'BeneficialOwnership/OpenData/Corporate/CorporateDF_FailedPreProcessing',",
+                "     truncate: true,",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: false,",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> sinkCorporate2",
+                "filter1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     folderPath: 'BeneficialOwnership/OpenData/Corporate/CorporateDF_Processed/OpenData',",
+                "     truncate: true,",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> parquetSinkCorporate"
+            ]
+        }
+    }
+}

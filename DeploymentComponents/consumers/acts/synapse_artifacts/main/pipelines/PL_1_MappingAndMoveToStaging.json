@@ -1,0 +1,312 @@
+{
+	"name": "PL_1_MappingAndMoveToStaging",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Files to Map",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT DISTINCT A.[sourceCTId] AS [id]\n,A.[sourceFileName]\n,A.[sourcePath]\n,C.CopySourceSettings\n,A.[sinkdbTableName]\n,A.[mappingJSON]\nFROM [dbo].[DataMapping] A\nLEFT JOIN (SELECT [control_table_record_id],COUNT(*) AS Staged_Record_Count\n\t\t\tFROM [dbo].[IngestedLandingDataAudit]\n\t\t\tWHERE [ingestion_status] = 'Processed'\n\t\t\tAND [destination_folderpath] LIKE 'staging%'\n\t\t\tGROUP BY [control_table_record_id]) B\nON A.[sourceCTId] = B.[control_table_record_id]\nLEFT JOIN [dbo].[ControlTable] C\nON A.[sourceCTId] = C.[id]\nWHERE  B.[Staged_Record_Count] IS NULL",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_SQL_ControlTable",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "For Each File",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get Files to Map",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Files to Map').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Map Data",
+							"type": "SynapseNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebook": {
+									"referenceName": "NB_MapData",
+									"type": "NotebookReference"
+								},
+								"parameters": {
+									"raw_folderpath": {
+										"value": {
+											"value": "@replace(item().sourcePath,'raw/','')",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"raw_filename": {
+										"value": {
+											"value": "@item().sourceFileName",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"mappingJSON": {
+										"value": {
+											"value": "@item().mappingJSON",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"sinkdbTableName": {
+										"value": {
+											"value": "@item().sinkdbTableName",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"delimiter": {
+                                        "value": {
+                                            "value": "@json(item().CopySourceSettings).delimiter",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+								},
+								"snapshot": true,
+								"conf": {
+									"spark.dynamicAllocation.enabled": null,
+									"spark.dynamicAllocation.minExecutors": null,
+									"spark.dynamicAllocation.maxExecutors": null
+								},
+								"numExecutors": null
+							}
+						},
+						{
+							"name": "Add Logging Record - Staging",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Map Data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                                "storedProcedureParameters": {
+                                    "source_filename": {
+                                        "value": {
+                                            "value": "@item().sourceFileName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_folderpath": {
+                                        "value": {
+                                            "value": "@item().sourcePath",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_file_md5_hash": {
+                                        "value": "",
+                                        "type": "String"
+                                    },
+                                    "ignoredStatus": {
+                                        "value": "Not Ignored",
+                                        "type": "String"
+                                    },
+                                    "duplicateStatus": {
+                                        "value": "Not Duplicate",
+                                        "type": "String"
+                                    },
+                                    "destination_filename": {
+                                        "value": "",
+                                        "type": "String"
+                                    },
+                                    "destination_folderpath": {
+                                        "value": {
+                                            "value": "@concat('staging/EnterpriseTaxModel/',item().sinkdbTableName)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "ingestion_status": {
+                                        "value": "Processed",
+                                        "type": "String"
+                                    },
+                                    "pipeline_trigger": {
+                                        "value": {
+                                            "value": "@pipeline().TriggerName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "id_to_update": {
+                                        "value": null,
+                                        "type": "Int32"
+                                    },
+                                    "pipeline_id": {
+                                        "value": {
+                                            "value": "@pipeline().RunId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "control_table_record_id": {
+                                        "value": {
+                                            "value": "@item().id",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+							"linkedServiceName": {
+								"referenceName": "LS_SQL_MetadataControl",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Add Logging Record - Staging Failed",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Map Data",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                                "storedProcedureParameters": {
+                                    "source_filename": {
+                                        "value": {
+                                            "value": "@item().sourceFileName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_folderpath": {
+                                        "value": {
+                                            "value": "@item().sourcePath",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_file_md5_hash": {
+                                        "value": "",
+                                        "type": "String"
+                                    },
+                                    "ignoredStatus": {
+                                        "value": "Not Ignored",
+                                        "type": "String"
+                                    },
+                                    "duplicateStatus": {
+                                        "value": "Not Duplicate",
+                                        "type": "String"
+                                    },
+                                    "destination_filename": {
+                                        "value": "",
+                                        "type": "String"
+                                    },
+                                    "destination_folderpath": {
+                                        "value": {
+                                            "value": "@concat('staging/EnterpriseTaxModel/',item().sinkdbTableName)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "ingestion_status": {
+                                        "value": "Failed",
+                                        "type": "String"
+                                    },
+                                    "pipeline_trigger": {
+                                        "value": {
+                                            "value": "@pipeline().TriggerName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "id_to_update": {
+                                        "value": null,
+                                        "type": "Int32"
+                                    },
+                                    "pipeline_id": {
+                                        "value": {
+                                            "value": "@pipeline().RunId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "control_table_record_id": {
+                                        "value": {
+                                            "value": "@item().id",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+							"linkedServiceName": {
+								"referenceName": "LS_SQL_MetadataControl",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "Mapping"
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,133 @@
+{
+	"name": "df_SanctionsValidation",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "getJson"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkActivity"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "select3"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as string,",
+				"          caption as string,",
+				"          propertiesname as string,",
+				"          propertiesentity as string,",
+				"          propertiesstartDate as string,",
+				"          propertiesendDate as string,",
+				"          propertiesreason as string,",
+				"          propertiesauthority as string,",
+				"          propertiesfull as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Sanctions/Flattened/*']) ~> getJson",
+				"derivedColumn1 select(mapColumn(",
+				"          EntityID = propertiesentity,",
+				"          Entity_Name = propertiesname,",
+				"          Address = propertiesfull,",
+				"          Evidence = Properties,",
+				"          Category",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"getJson filter(not(isNull(propertiesreason)) ",
+				"&& not(like(propertiesreason, '%?%') ) ",
+				"&& not(isNull(propertiesentity)) ",
+				"&& not(like(propertiesname, '%?%') ) ",
+				"&& not(like(propertiesentity, '%?%') )) ~> filter1",
+				"filter1 derive(Properties = concat(toString('{\"properties_authority\" : \"'), propertiesauthority,\r",
+				"toString('\",\"properties_reason\" : \"'),propertiesreason,\r",
+				"toString('\",\"caption : \"'),caption,\r",
+				"toString('\",\"properties_startDate\" : \"'), case(length(propertiesstartDate)> 2, propertiesstartDate, \"n/a\"),\r",
+				"toString('\",\"properties_endDate\" : \"'), case(length(propertiesendDate)> 2, propertiesendDate, \"n/a\"),\r",
+				"toString('\"}')),",
+				"          Category = 'Sanction') ~> derivedColumn1",
+				"select1 derive(Entity_Name = lower(Entity_Name),",
+				"          Address = lower(Address),",
+				"          Description = \" \") ~> derivedColumn2",
+				"derivedColumn2 select(mapColumn(",
+				"          EntityID,",
+				"          EntityName = Entity_Name,",
+				"          Address,",
+				"          Evidence,",
+				"          Category,",
+				"          Description",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 aggregate(groupBy(EntityID,",
+				"          EntityName,",
+				"          Address,",
+				"          Evidence,",
+				"          Category,",
+				"          Description),",
+				"     count = count()) ~> aggregate1",
+				"aggregate1 select(mapColumn(",
+				"          EntityID,",
+				"          EntityName,",
+				"          Address,",
+				"          Evidence,",
+				"          Category,",
+				"          Description",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select3 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: 'BeneficialOwnership/OpenData/Sanctions/SanctionsDF_Processed/OpenData',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkActivity"
+			]
+		}
+	}
+}

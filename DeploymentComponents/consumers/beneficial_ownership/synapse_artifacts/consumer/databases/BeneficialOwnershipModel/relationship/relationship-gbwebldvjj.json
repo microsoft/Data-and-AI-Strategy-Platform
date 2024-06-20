@@ -1,0 +1,26 @@
+{
+	"name": "relationship-gbwebldvjj",
+	"properties": {
+		"Name": "relationship-gbwebldvjj",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "EntitySummary",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "cc27c264-8c20-4b80-abf9-b7b8cf19783b"
+	},
+	"type": "RELATIONSHIP"
+}

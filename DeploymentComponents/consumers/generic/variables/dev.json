@@ -1,0 +1,52 @@
+{
+    "DeployDevEnvironment": true,
+
+    "DeployResourcesWithPublicAccess": true,
+
+    "DeployWithCustomNetworking": false,
+
+    "Consumer_Assign_RBAC_On_Deployment": true,
+
+    "azureResourceLocation": "eastus2",
+
+    "tags": {
+        "env": "dev"
+    },
+
+    "Entra_Group_for_Consumer": {
+        "Group_ID": "",
+        "Group_Name": ""
+    },
+
+    "NewResourceGroupName": "",
+
+    "DeployNewSynapse": true,
+
+    "DeployNewSynapseArtifacts": true,
+
+    "NewSynapseWorkspaceName": "",
+
+    "DeploySynapseWithDataExfiltrationProtection": false,
+
+    "DeployNewAzureSQL": true,
+
+    "DeployNewAzureSQLArtifacts": true,
+
+    "NewAzureSQLServerName": "",
+
+    "DeployNewConsumerMlWorkspace": true,
+
+    "NewMlWorkspaceName": "",
+
+    "NewMlKeyVaultName": "",
+
+    "NewMlStorageName": "",
+
+    "NewMlAppInsightsName": "",
+
+    "NewMlContainerRegistryName": "",
+
+    "ConnectToExistingPurview": true,
+    "ConnectToExistingLogAnalytics": true,
+    "ConnectToExistingCognitiveService": true
+}

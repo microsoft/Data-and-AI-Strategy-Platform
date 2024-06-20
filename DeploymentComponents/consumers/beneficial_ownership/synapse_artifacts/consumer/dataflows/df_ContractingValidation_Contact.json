@@ -1,0 +1,163 @@
+{
+	"name": "df_ContractingValidation_Contact",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "getJson"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink2"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "select5"
+				},
+				{
+					"name": "unpivot2"
+				},
+				{
+					"name": "select6"
+				},
+				{
+					"name": "select10"
+				},
+				{
+					"name": "filter5"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "filter6"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          date as string,",
+				"          partiesaddressstreetAddress as string,",
+				"          partiesaddresspostalCode as string,",
+				"          partiesaddresscountryName as string,",
+				"          partiesid as string,",
+				"          partiesname as string,",
+				"          partiescontactPointemail as string,",
+				"          partiescontactPointtelephone as string,",
+				"          partiescontactPointurl as string,",
+				"          partiesroles as string,",
+				"          tenderid as string,",
+				"          tendertitle as string,",
+				"          awardsitemsid as string,",
+				"          awardsitemsdescription as string,",
+				"          Id as string[],",
+				"          description as string[]",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/Flattened/*']) ~> getJson",
+				"select10 derive(address_cleaned = lower(concat(address,\" \",country)),",
+				"          email_cleaned = regexReplace(email, \"[\\\"\\'*()-:;]\", \"\"),",
+				"          phone_cleaned = regexReplace(telephone, \"[\\\"\\'*()-:;]\", \"\")) ~> derivedColumn2",
+				"derivedColumn2 select(mapColumn(",
+				"          id,",
+				"          name,",
+				"          email = email_cleaned,",
+				"          address = address_cleaned,",
+				"          phone = phone_cleaned,",
+				"          website = url",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 aggregate(groupBy(id,",
+				"          name,",
+				"          email,",
+				"          address,",
+				"          phone,",
+				"          website),",
+				"     count = count()) ~> aggregate1",
+				"aggregate1 select(mapColumn(",
+				"          id,",
+				"          name,",
+				"          email,",
+				"          address,",
+				"          phone,",
+				"          website",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select5",
+				"select5 unpivot(output(",
+				"          Attribute as string,",
+				"          name as string,",
+				"          address as string,",
+				"          phone as string,",
+				"          email as string,",
+				"          website as string",
+				"     ),",
+				"     ungroupBy(id),",
+				"     lateral: true,",
+				"     ignoreNullPivots: true) ~> unpivot2",
+				"unpivot2 select(mapColumn(",
+				"          EntityID = id,",
+				"          AttributeID = Attribute,",
+				"          Value = name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select6",
+				"filter5 select(mapColumn(",
+				"          address = partiesaddressstreetAddress,",
+				"          country = partiesaddresscountryName,",
+				"          id = partiesid,",
+				"          name = partiesname,",
+				"          email = partiescontactPointemail,",
+				"          telephone = partiescontactPointtelephone,",
+				"          url = partiescontactPointurl,",
+				"          role = partiesroles",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select10",
+				"getJson filter(startsWith(partiesroles,'tenderer') || startsWith(partiesroles, 'supplier')) ~> filter5",
+				"select6 derive(EntityID = lower(EntityID),",
+				"          Value = (lower(Value))) ~> derivedColumn3",
+				"derivedColumn3 filter(not(isNull(Value)) && length(Value) > 2",
+				"&& not(like(Value, '%?%') )) ~> filter6",
+				"filter6 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: (\"BeneficialOwnership/OpenData/Contracting/ContactDF_Processed/OpenData\"),",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink2"
+			]
+		}
+	}
+}

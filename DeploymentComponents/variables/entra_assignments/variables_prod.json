@@ -1,0 +1,54 @@
+{
+
+    "Entra_Group_Admin": {
+        "Group_ID": "",
+        "Group_Name": ""
+    },
+
+    "Entra_Group_Shared_Service": {
+        "Group_ID": "",
+        "Group_Name": ""
+    },
+
+    "Assign_RBAC_for_Governance": false,
+    
+    "Entra_Group_Governance": {
+        "Group_ID": "",
+        "Group_Name": ""
+    },
+
+    "Assign_RBAC_for_Publishers": false,
+
+    "Entra_Groups_Data_Publishers": [
+        {
+            "Group_ID": "",
+            "Storage_Paths_Write_Access": []
+        },
+        {
+            "Group_ID": "",
+            "Storage_Paths_Write_Access": []
+        }
+    ],
+
+    "Assign_RBAC_for_Producers": false,
+    
+    "Entra_Groups_Data_Producers": [
+        {
+            "Group_ID": "",
+            "Storage_Paths_Write_Access": []
+        }
+    ],
+
+    "Assign_RBAC_for_Consumers": false,
+
+    "Entra_Groups_Data_Consumers": [
+        {
+            "Group_ID": ""
+        }
+    ],
+
+    "Assign_RBAC_for_CICD_Service_Principal": false,
+
+    "CICD_Service_Principal_Object_ID": ""
+
+}

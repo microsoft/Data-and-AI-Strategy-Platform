@@ -1,0 +1,70 @@
+{
+    "name": "df_VATBottomChartTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "BottomChart"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "VATBottomshartTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          State as string,",
+                "          {VAT Gap} as long,",
+                "          {VAT Collected} as long,",
+                "          {VAT Target} as long,",
+                "          {VAT GAP Format} as string,",
+                "          {VAT GAP Target Format} as string,",
+                "          {New Label for GAP mod} as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> BottomChart",
+                "BottomChart sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'VATBottomChart',",
+                "     mapColumn(",
+                "          State,",
+                "          VATGap = {VAT Gap},",
+                "          VATCollected = {VAT Collected},",
+                "          VATTarget = {VAT Target},",
+                "          VATGAPFormat = {VAT GAP Format},",
+                "          VATGAPTargetFormat = {VAT GAP Target Format},",
+                "          NewLabelforGAPmod = {New Label for GAP mod}",
+                "     )) ~> VATBottomshartTAXModel"
+            ]
+        }
+    }
+}

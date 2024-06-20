@@ -1,0 +1,23 @@
+{
+	"name": "relationship-mbcytsuqfj",
+	"properties": {
+		"Name": "relationship-mbcytsuqfj",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "TaxAnomalyTypes",
+		"ToTableName": "AnomalyResults",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxAnomalyTypeId",
+				"ToColumnName": "TaxAnomalyTypeID"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-owqynygxbx",
+	"properties": {
+		"Name": "relationship-owqynygxbx",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "CustomerLocation",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxpayerId",
+				"ToColumnName": "CustomerId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

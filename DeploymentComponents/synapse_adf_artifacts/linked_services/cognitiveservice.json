@@ -1,0 +1,26 @@
+{
+    "properties": {
+        "annotations": [],
+        "type": "CognitiveService",
+        "typeProperties": {
+            "subscriptionId": "subID",
+            "resourceGroup": "resourceGroupName",
+            "csName": "cognitiveServiceName",
+            "csKind": "FormRecognizer",
+            "csLocation": "azureLocation",
+            "endPoint": "https://cognitiveServiceName.cognitiveservices.azure.com/",
+            "csKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "LS_KeyVault",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": "cognitiveServiceName-key1"
+            }
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,371 @@
+# This is a basic workflow to help you get started with Actions
+
+name: machine-learning-resources
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow from another workflow
+  workflow_call:
+    secrets:
+      TENANT_ID:
+        required: true
+      SUBSCRIPTION_ID:
+        required: true
+      SERVICE_PRINCIPAL_CLIENT_ID:
+        required: true
+      DNS_ZONE_SUBSCRIPTION_ID:
+        required: false
+    inputs:
+      DeployMLWorkspace:
+        required: true
+        type: string
+      DeployMLCompute:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      envFolderPath:
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+          
+  create-machine-learning-resources:
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        if: ${{ inputs.DeployMLWorkspace == 'True' || inputs.DeployMLCompute == 'True' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        if: ${{ inputs.DeployMLWorkspace == 'True' || inputs.DeployMLCompute == 'True' }}
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/entra_assignments/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Create resource group for environment resources and get service principal name
+      - name: Set Env Variables Needed For Downstream Actions
+        if: ${{ inputs.DeployMLWorkspace == 'True' || inputs.DeployMLCompute == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $spDetails = az ad sp show --id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" | ConvertFrom-Json  
+
+            # Service Principal Name
+            $servicePrincipalName = $spDetails.appDisplayName
+            Write-Output "::add-mask::$servicePrincipalName"
+            "servicePrincipalName=$servicePrincipalName" >> $env:GITHUB_ENV
+
+            # Service Principal AAD Identity ID
+            $servicePrincipalObjectId = $spDetails.id
+            Write-Output "::add-mask::$servicePrincipalObjectId"
+            "servicePrincipalObjectId=$servicePrincipalObjectId" >> $env:GITHUB_ENV
+
+            # Tags with Single Quotes For Bicep Templates
+            $tags_single_quote = '${{ env.tags }}' -replace '"', "'"
+            "tags_single_quote=$tags_single_quote" >> $env:GITHUB_ENV
+
+
+            if ( '${{ env.Entra_Groups_Data_Publishers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Publishers = '['+ '${{ env.Entra_Groups_Data_Publishers }}' + ']'
+              "Entra_Groups_Data_Publishers=$Entra_Groups_Data_Publishers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Producers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Producers = '['+ '${{ env.Entra_Groups_Data_Producers }}' + ']'
+              "Entra_Groups_Data_Producers=$Entra_Groups_Data_Producers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Consumers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Consumers = '['+ '${{ env.Entra_Groups_Data_Consumers }}' + ']'
+              "Entra_Groups_Data_Consumers=$Entra_Groups_Data_Consumers" >> $env:GITHUB_ENV
+            }
+
+            $Entra_Group_Admin_HashTable = '${{ env.Entra_Group_Admin }}' | ConvertFrom-Json
+            $Entra_Group_Admin_ID = $Entra_Group_Admin_HashTable.Group_ID
+            "Entra_Group_Admin_ID=$Entra_Group_Admin_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Admin_Name = $Entra_Group_Admin_HashTable.Group_Name
+            "Entra_Group_Admin_Name=$Entra_Group_Admin_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_HashTable = '${{ env.Entra_Group_Shared_Service }}' | ConvertFrom-Json
+            $Entra_Group_Shared_Service_ID = $Entra_Group_Shared_Service_HashTable.Group_ID
+            "Entra_Group_Shared_Service_ID=$Entra_Group_Shared_Service_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Shared_Service_Name = $Entra_Group_Shared_Service_HashTable.Group_Name
+            "Entra_Group_Shared_Service_Name=$Entra_Group_Shared_Service_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_HashTable = '${{ env.Entra_Group_Governance }}' | ConvertFrom-Json
+            $Entra_Group_Governance_ID = $Entra_Group_Governance_HashTable.Group_ID
+            "Entra_Group_Governance_ID=$Entra_Group_Governance_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Governance_Name = $Entra_Group_Governance_HashTable.Group_Name
+            "Entra_Group_Governance_Name=$Entra_Group_Governance_Name" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for environment resources and get service principal name
+      - name: Parse Entra Groups for Bicep
+        if: ${{ inputs.DeployMLWorkspace == 'True' || inputs.DeployMLCompute == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # parse entra groups
+            $Entra_Group_Admin_Json = '${{ env.Entra_Group_Admin }}' -replace '"', "'"
+            "Entra_Group_Admin_Json=$Entra_Group_Admin_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_Json = '${{ env.Entra_Group_Shared_Service }}' -replace '"', "'"
+            "Entra_Group_Shared_Service_Json=$Entra_Group_Shared_Service_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_Json = '${{ env.Entra_Group_Governance }}' -replace '"', "'"
+            "Entra_Group_Governance_Json=$Entra_Group_Governance_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Publishers_Json = '${{ env.Entra_Groups_Data_Publishers }}' -replace '"', "'"
+            "Entra_Groups_Data_Publishers_Json=$Entra_Groups_Data_Publishers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Producers_Json = '${{ env.Entra_Groups_Data_Producers }}' -replace '"', "'"
+            "Entra_Groups_Data_Producers_Json=$Entra_Groups_Data_Producers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Consumers_Json = '${{ env.Entra_Groups_Data_Consumers }}' -replace '"', "'"
+            "Entra_Groups_Data_Consumers_Json=$Entra_Groups_Data_Consumers_Json" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      - name: Deploy ML Workspace Storage Account
+        if: ${{ inputs.DeployMLWorkspace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/storageaccount.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/mlstorage.json
+            location=${{ env.azureResourceLocation }}
+            storageAccountName=${{ env.mlStorageName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }}
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }}      
+          failOnStdErr: false
+            
+      - name: Deploy ML Workspace App Insights
+        if: ${{ inputs.DeployMLWorkspace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/appinsights.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/mlappinsights.json
+            location=${{ env.azureResourceLocation }}
+            appInsightsName=${{ env.mlAppInsightsName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+          failOnStdErr: false
+
+      - name: Deploy Container Registry for ML Workspace
+        if: ${{ inputs.DeployMLWorkspace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/container_registry.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/aml_container_registry.json
+            location=${{ env.azureResourceLocation }}
+            containerRegistryName=${{ env.mlContainerRegistryName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy Key Vault for ML Workspace
+        if: ${{ inputs.DeployMLWorkspace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/keyvault.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/mlWorkspaceKeyVault.json
+            location=${{ env.azureResourceLocation }}
+            keyVaultName=${{ env.mlWorkspaceKeyVaultName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy ML Workspace
+        if: ${{ inputs.DeployMLWorkspace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/mlworkspace.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/mlworkspace.json
+            location=${{ env.azureResourceLocation }}
+            mlWorkspaceName=${{ env.mlWorkspaceName }} 
+            mlStorageAccountName=${{ env.mlStorageName }} 
+            appInsightsName=${{ env.mlAppInsightsName }} 
+            containerRegistryName=${{ env.mlContainerRegistryName }} 
+            keyVaultName=${{ env.mlWorkspaceKeyVaultName }} 
+            dataLakeName=${{ env.dataLakeName }} 
+            PrimaryRgName=${{ env.PrimaryRgName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            RedeploymentAfterNetworkingIsSetUp=${{ env.RedeploymentAfterNetworkingIsSetUp }}
+            DeployMLWorkspaceInManagedVnet=${{ env.DeployMLWorkspaceInManagedVnet }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+          failOnStdErr: false
+
+      - name: Deploy ML Compute for ML Workspace and Optionally RBAC for Compute
+        if: ${{ env.DeployMLCompute == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.MlRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/ml_compute.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/ml_compute.json
+            location=${{ env.azureResourceLocation }}
+            mlWorkspaceName=${{ env.mlWorkspaceName }} 
+            dataLakeName=${{ env.dataLakeName }} 
+            PrimaryRgName=${{ env.PrimaryRgName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }}
+            DeployMLWorkspaceInCustomerVnet=${{ env.DeployMLWorkspaceInCustomerVnet }}
+            VnetForResourcesRgName=${{ env.VnetForResourcesRgName }} 
+            VnetForResourcesName=${{ env.VnetForResourcesName }} 
+            MLComputeSubnetName=${{ env.MLComputeSubnetName }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            Assign_RBAC_On_Deployment=${{ env.Assign_RBAC_On_Deployment }} 
+          failOnStdErr: false
+
+      - name: Enable Azure Container Registry for ML Workspace Behind Virtual Network
+        if: ${{ inputs.DeployMLWorkspace == 'True' && env.CreatePrivateEndpoints == 'True' && env.DeployWithCustomNetworking == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            az extension add -n ml
+            az ml workspace update --name ${{ env.mlWorkspaceName }} --resource-group ${{ env.MlRgName }} --image-build-compute image-build-compute-cluster
+          azPSVersion: "latest"

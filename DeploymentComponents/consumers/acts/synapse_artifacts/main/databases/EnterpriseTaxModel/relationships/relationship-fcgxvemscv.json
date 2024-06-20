@@ -1,0 +1,23 @@
+{
+	"name": "relationship-fcgxvemscv",
+	"properties": {
+		"Name": "relationship-fcgxvemscv",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "IndividualCustomer",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxpayerId",
+				"ToColumnName": "CustomerId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

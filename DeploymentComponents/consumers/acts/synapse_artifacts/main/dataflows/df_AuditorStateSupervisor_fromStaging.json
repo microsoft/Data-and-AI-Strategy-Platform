@@ -1,0 +1,94 @@
+{
+	"name": "df_AuditorStateSupervisor_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"name": "State"
+				}
+			],
+			"sinks": [
+				{
+					"name": "AuditorStateSupervisor"
+				}
+			],
+			"transformations": [
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          AuditorID as string,",
+				"          Auditor as string,",
+				"          State as string,",
+				"          StateId as string,",
+				"          Supervisor as string,",
+				"          SupervisorID as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/AuditorStateSupervisor/*']) ~> source1",
+				"source(output(",
+				"          StateId as integer,",
+				"          OriginalStateID as string,",
+				"          StateName as string,",
+				"          CensusDivisionId as integer,",
+				"          FipsCode as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'State') ~> State",
+				"source1 keyGenerate(output(AuditorIDNew as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"join1 select(mapColumn(",
+				"          AuditorID = AuditorIDNew,",
+				"          Auditor,",
+				"          State,",
+				"          StateId = State@StateId,",
+				"          Supervisor,",
+				"          SupervisorID",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"surrogateKey1, State join(State == OriginalStateID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'AuditorStateSupervisor') ~> AuditorStateSupervisor"
+			]
+		}
+	}
+}

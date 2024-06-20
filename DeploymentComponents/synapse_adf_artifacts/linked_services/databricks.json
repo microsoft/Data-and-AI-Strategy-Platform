@@ -1,0 +1,37 @@
+{
+    "properties": {
+        "parameters": {
+            "clusterVersion": {
+                "type": "string",
+                "defaultValue": "14.3.x-photon-scala2.12"
+            },
+            "clusterNodeType": {
+                "type": "string",
+                "defaultValue": "Standard_E8ds_v5"
+            },
+            "workerOptions": {
+                "type": "string",
+                "defaultValue": "2:8"
+            }
+        },
+        "annotations": [],
+        "type": "AzureDatabricks",
+        "typeProperties": {
+            "domain": "databricksWorkspaceURL",
+            "authentication": "MSI",
+            "workspaceResourceId": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Databricks/workspaces/databricksWorkspaceName",
+            "newClusterNodeType": "@linkedService().clusterNodeType",
+            "newClusterNumOfWorker": "@linkedService().workerOptions",
+            "newClusterSparkEnvVars": {
+                "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+            },
+            "newClusterVersion": "@linkedService().clusterVersion",
+            "clusterOption": "Fixed",
+            "newClusterInitScripts": []
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

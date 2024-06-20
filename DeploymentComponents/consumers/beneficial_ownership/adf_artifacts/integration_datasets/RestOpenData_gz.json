@@ -1,0 +1,32 @@
+{
+    "name": "RestOpenData_gz",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_HTTP",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "URL": {
+                    "value": "@dataset().URL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "URL": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Binary",
+        "typeProperties": {
+            "location": {
+                "type": "HttpServerLocation"
+            },
+            "compression": {
+                "type": "gzip",
+                "level": "Optimal"
+            }
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-dpzznegbqu",
+	"properties": {
+		"Name": "relationship-dpzznegbqu",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "VAT_Targets",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "OriginalTaxpayerID",
+				"ToColumnName": "TaxpayerId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-rjpdyzeajd",
+	"properties": {
+		"Name": "relationship-rjpdyzeajd",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "Sector",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "OriginalTaxpayerID",
+				"ToColumnName": "TaxpayerId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

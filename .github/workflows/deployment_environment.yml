@@ -1,0 +1,2030 @@
+# This is a basic workflow to help you get started with Actions
+
+name: data-strategy-environment
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow from another workflow
+  workflow_call:
+    secrets:
+      TENANT_ID:
+        required: true
+      SUBSCRIPTION_ID:
+        required: true
+      SERVICE_PRINCIPAL_CLIENT_ID:
+        required: true
+      VM_USERNAME:
+        required: false
+      VM_PASSWORD:
+        required: false
+      DNS_ZONE_SUBSCRIPTION_ID:
+        required: false
+    inputs:
+      environment:
+        required: true
+        type: string
+      envFolderPath:
+        required: true
+        type: string
+        
+permissions:
+  id-token: write
+  contents: read
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+          
+  create-env-azure-resources:
+
+    outputs:
+      DeployDataScienceToolkit: ${{ env.DeployDataScienceToolkit }}
+      DeployOpenAIServiceAndAiSearch: ${{ env.DeployOpenAIServiceAndAiSearch }}
+      DeployOpenAIDemoApp: ${{ env.DeployOpenAIDemoApp }}
+      DeployLogicApp: ${{ env.DeployLogicApp }}
+      DeployLogicAppArtifacts: ${{ env.DeployLogicAppArtifacts }}
+      DeployMLWorkspace: ${{ env.DeployMLWorkspace }}
+      DeployMLCompute: ${{ env.DeployMLCompute }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/entra_assignments/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Create resource group for environment resources and get service principal name
+      - name: Set Env Variables Needed For Downstream Actions
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $spDetails = az ad sp show --id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" | ConvertFrom-Json  
+
+            # Service Principal Name
+            $servicePrincipalName = $spDetails.appDisplayName
+            Write-Output "::add-mask::$servicePrincipalName"
+            "servicePrincipalName=$servicePrincipalName" >> $env:GITHUB_ENV
+
+            # Service Principal AAD Identity ID
+            $servicePrincipalObjectId = $spDetails.id
+            Write-Output "::add-mask::$servicePrincipalObjectId"
+            "servicePrincipalObjectId=$servicePrincipalObjectId" >> $env:GITHUB_ENV
+
+            # Tags with Single Quotes For Bicep Templates
+            $tags_single_quote = '${{ env.tags }}' -replace '"', "'"
+            "tags_single_quote=$tags_single_quote" >> $env:GITHUB_ENV
+
+
+            if ( '${{ env.Entra_Groups_Data_Publishers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Publishers = '['+ '${{ env.Entra_Groups_Data_Publishers }}' + ']'
+              "Entra_Groups_Data_Publishers=$Entra_Groups_Data_Publishers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Producers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Producers = '['+ '${{ env.Entra_Groups_Data_Producers }}' + ']'
+              "Entra_Groups_Data_Producers=$Entra_Groups_Data_Producers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Consumers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Consumers = '['+ '${{ env.Entra_Groups_Data_Consumers }}' + ']'
+              "Entra_Groups_Data_Consumers=$Entra_Groups_Data_Consumers" >> $env:GITHUB_ENV
+            }
+
+            $Entra_Group_Admin_HashTable = '${{ env.Entra_Group_Admin }}' | ConvertFrom-Json
+            $Entra_Group_Admin_ID = $Entra_Group_Admin_HashTable.Group_ID
+            "Entra_Group_Admin_ID=$Entra_Group_Admin_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Admin_Name = $Entra_Group_Admin_HashTable.Group_Name
+            "Entra_Group_Admin_Name=$Entra_Group_Admin_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_HashTable = '${{ env.Entra_Group_Shared_Service }}' | ConvertFrom-Json
+            $Entra_Group_Shared_Service_ID = $Entra_Group_Shared_Service_HashTable.Group_ID
+            "Entra_Group_Shared_Service_ID=$Entra_Group_Shared_Service_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Shared_Service_Name = $Entra_Group_Shared_Service_HashTable.Group_Name
+            "Entra_Group_Shared_Service_Name=$Entra_Group_Shared_Service_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_HashTable = '${{ env.Entra_Group_Governance }}' | ConvertFrom-Json
+            $Entra_Group_Governance_ID = $Entra_Group_Governance_HashTable.Group_ID
+            "Entra_Group_Governance_ID=$Entra_Group_Governance_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Governance_Name = $Entra_Group_Governance_HashTable.Group_Name
+            "Entra_Group_Governance_Name=$Entra_Group_Governance_Name" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for environment resources and get service principal name
+      - name: Parse Entra Groups for Bicep
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # parse entra groups
+            $Entra_Group_Admin_Json = '${{ env.Entra_Group_Admin }}' -replace '"', "'"
+            "Entra_Group_Admin_Json=$Entra_Group_Admin_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_Json = '${{ env.Entra_Group_Shared_Service }}' -replace '"', "'"
+            "Entra_Group_Shared_Service_Json=$Entra_Group_Shared_Service_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_Json = '${{ env.Entra_Group_Governance }}' -replace '"', "'"
+            "Entra_Group_Governance_Json=$Entra_Group_Governance_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Publishers_Json = '${{ env.Entra_Groups_Data_Publishers }}' -replace '"', "'"
+            "Entra_Groups_Data_Publishers_Json=$Entra_Groups_Data_Publishers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Producers_Json = '${{ env.Entra_Groups_Data_Producers }}' -replace '"', "'"
+            "Entra_Groups_Data_Producers_Json=$Entra_Groups_Data_Producers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Consumers_Json = '${{ env.Entra_Groups_Data_Consumers }}' -replace '"', "'"
+            "Entra_Groups_Data_Consumers_Json=$Entra_Groups_Data_Consumers_Json" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for envionment resources and get service principal name
+      - name: Create Resource Groups
+        if: ${{ env.ServicePrincipalHasOwnerRBACAtSubscription == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $tagsHashTable = '${{ env.tags }}' | ConvertFrom-Json -AsHashtable
+            New-AzResourceGroup -Name ${{ env.PrimaryRgName }} -Location ${{ env.azureResourceLocation }} -Tag $tagsHashTable -Force
+            
+            # vnet rg
+            if ("${{ env.DeployWithCustomNetworking }}" -eq "True" -and "${{ env.DeployNewVnet }}" -eq "True") { 
+              $tagsHashTable = '${{ env.tags }}' | ConvertFrom-Json -AsHashtable
+              New-AzResourceGroup -Name ${{ env.VnetForResourcesRgName }} -Location ${{ env.azureResourceLocation }} -Tag $tagsHashTable -Force
+              $vnetName = (Get-AzResource -ResourceGroupName ${{ env.VnetForResourcesRgName }} -Name ${{ env.VnetForResourcesName }}).Name
+              "vnetName=$vnetName" >> $env:GITHUB_ENV
+            }
+            
+            # logic app rg
+            if ("${{ env.DeployLogicApp }}" -eq "True" ) { 
+              $tagsHashTable = '${{ env.tags }}' | ConvertFrom-Json -AsHashtable
+              New-AzResourceGroup -Name ${{ env.LogicAppRgName }} -Location ${{ env.azureResourceLocation }} -Tag $tagsHashTable -Force
+            }
+
+            # ml rg
+            if ("${{ env.DeployMLWorkspace }}" -eq "True" ) { 
+              $tagsHashTable = '${{ env.tags }}' | ConvertFrom-Json -AsHashtable
+              New-AzResourceGroup -Name ${{ env.MlRgName }} -Location ${{ env.azureResourceLocation }} -Tag $tagsHashTable -Force
+            }
+
+            # open ai rg
+            if ("${{ env.DeployOpenAIServiceAndAiSearch }}" -eq "True" -or "${{ env.DeployOpenAIDemoApp }}" -eq "True") { 
+              $tagsHashTable = '${{ env.tags }}' | ConvertFrom-Json -AsHashtable
+              New-AzResourceGroup -Name ${{ env.OpenAIRgName }} -Location ${{ env.azureResourceLocation }} -Tag $tagsHashTable -Force
+            }
+          azPSVersion: "latest"
+
+      - name: Validate Resource Names and Other Inputs
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # Validate Inputs
+            if ("${{ env.DeployDataLake }}" -eq "True") {
+              $availability = Get-AzStorageAccountNameAvailability -Name '${{ env.dataLakeName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.dataLakeName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the dataLakeName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployLandingStorage }}" -eq "True") {
+              $availability = Get-AzStorageAccountNameAvailability -Name '${{ env.landingStorageName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.landingStorageName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the landingStorageName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployKeyVault }}" -eq "True") {
+              $availability = Test-AzKeyVaultNameAvailability -Name '${{ env.keyVaultName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.keyVaultName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the keyVaultName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeploySynapse }}" -eq "True") {
+              $availability = az synapse workspace check-name --name '${{ env.synapseWorkspaceName }}' | ConvertFrom-Json 
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.synapseWorkspaceName }}"
+              if ($availability.available -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the synapseWorkspaceName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployAzureSQL }}" -eq "True") {
+              $payload = '{ "name": "${{ env.azureSQLServerName }}", "type": "Microsoft.Sql/servers"}' 
+              $httpResponse = Invoke-AzRestMethod -Path "subscriptions/${{ secrets.SUBSCRIPTION_ID }}/providers/Microsoft.Sql/checkNameAvailability?api-version=2021-11-01" -Payload $payload -Method POST
+              $availability = $httpResponse.Content | ConvertFrom-Json
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.azureSQLServerName }}"
+              if ($availability.available -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the azureSQLServerName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployEventHubNamespace }}" -eq "True") {
+              $availability = az eventhubs namespace exists --name '${{ env.eventHubNamespaceName }}' | ConvertFrom-Json 
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.eventHubNamespaceName }}"
+              if ($availability.nameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the eventHubNamespaceName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployCognitiveService }}" -eq "True") {
+              $payload = '{ "subdomainName": "${{ env.cognitiveServiceName }}", "type": "Microsoft.CognitiveServices/accounts"}' 
+              $httpResponse = Invoke-AzRestMethod -Path "subscriptions/${{ secrets.SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/checkDomainAvailability?api-version=2023-05-01" -Payload $payload -Method POST
+              $availability = $httpResponse.Content | ConvertFrom-Json
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.cognitiveServiceName }}"
+              if ($availability.isSubdomainAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the cognitiveServiceName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.reason 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployLogicApp }}" -eq "True") {
+              $availability = Get-AzStorageAccountNameAvailability -Name '${{ env.logicAppStorageName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.LogicAppRgName }}" -Name "${{ env.logicAppStorageName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the logicAppStorageName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployMLWorkspace }}" -eq "True") {
+              $availability = Get-AzStorageAccountNameAvailability -Name '${{ env.mlStorageName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.MlRgName }}" -Name "${{ env.mlStorageName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the mlStorageName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployMLWorkspace }}" -eq "True") {
+              $availability = Test-AzContainerRegistryNameAvailability -Name '${{ env.mlContainerRegistryName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.MlRgName }}" -Name "${{ env.mlContainerRegistryName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the mlContainerRegistryName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployMLWorkspace }}" -eq "True") {
+              $availability = Test-AzKeyVaultNameAvailability -Name '${{ env.mlWorkspaceKeyVaultName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.MlRgName }}" -Name "${{ env.mlWorkspaceKeyVaultName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the mlWorkspaceKeyVaultName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployPurview }}" -eq "True") {
+              Install-Module -Name Az.Purview -RequiredVersion 0.2.0 -AllowPrerelease -Force 
+              $availability = Test-AzPurviewAccountNameAvailability -Name '${{ env.purviewName }}' -Type "Microsoft.Purview/accounts"
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.purviewName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the mlWorkspaceKeyVaultName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployWithCustomNetworking }}" -eq "True" -and "${{ env.AllowAccessToIpRange }}" -eq "True" ) {
+              if ("${{ env.IpRangeCidr }}" -eq "0.0.0.0" -or "${{ env.IpRangeStart }}" -eq "0.0.0.0" -or "${{ env.IpRangeEnd }}" -eq "0.0.0.0") {
+              $errorMessage = "None of the variables (IpRangeCidr, IpRangeStart, IpRangeEnd) in the networking setup file can equal 0.0.0.0. Please update the following file and redeploy: DeliveryIP_GitHub/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json"  
+              throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployWithCustomNetworking }}" -eq "True" -and "${{ env.DeployMLWorkspaceInManagedVnet }}" -eq "True" -and "${{ env.DeployMLWorkspaceInCustomerVnet }}" -eq "True" -and "${{ env.DeployMLWorkspace }}" -eq "True") {
+              $errorMessage = "Both DeployMLWorkspaceInManagedVnet and DeployMLWorkspaceInCustomerVnet cannot be true. Please set one to true and one to false. Documentation reference as you make your decision: https://learn.microsoft.com/en-us/azure/machine-learning/how-to-network-isolation-planning?view=azureml-api-2. Please update the following file and redeploy: DeliveryIP_GitHub/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json"  
+              throw $errorMessage
+            }
+            # Confirm VM Quota for ML Compute
+            if ("${{ env.DeployMLCompute }}" -eq "True") {
+              $VMQuotas = Get-AzMLServiceQuota -Location "${{ env.azureResourceLocation }}" | ConvertTo-Json | ConvertFrom-Json
+              $Eadsv5 = $VMQuotas | Where-Object { $_.NameLocalizedValue -eq "Standard EADSv5 Family Cluster Dedicated vCPUs" -and $_.Id -NotLike "*resourceGroups*" }
+              $Eadsv5Quota = $Eadsv5.Limit
+
+              $paramFile = Get-Content ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/ml_compute.json | Out-String
+              $Eadsv5InFile = $paramFile.Contains("Standard_E4ads_v5")
+
+              if ($Eadsv5Quota -eq 0 -and $Eadsv5InFile) {
+                $errorMessage = @"
+                Your subscription does not have any quota available for the Eadsv5 VM Family.
+                 This prevents Machine Learning Workspace Compute from being deployed. Please do one of the following and redeploy:
+                  1. Increase the Azure quota for the Eadsv5 VM Family: https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-quotas?view=azureml-api-2
+                  2. Update the VM size to a VM in a family that has quota on line 8 and 23 in the following file in the repository: DeliveryIP_GitHub/bicep_parameters/${{ inputs.envFolderPath }}/ml_compute.json.
+                   a. This link has available VM sizes in Azure: https://learn.microsoft.com/en-us/azure/virtual-machines/sizes
+                   b. Click Machine Learning after opening this link to review quotas for VM Families in your Azure subscription: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade/~/overview
+            "@
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployOpenAIServiceAndAiSearch }}" -eq "True" -or "${{ env.DeployOpenAIDemoApp }}" -eq "True") {
+              $payload = '{ "subdomainName": "${{ env.OpenAIServiceName }}", "type": "Microsoft.CognitiveServices/accounts"}' 
+              $httpResponse = Invoke-AzRestMethod -Path "subscriptions/${{ secrets.SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/checkDomainAvailability?api-version=2023-05-01" -Payload $payload -Method POST
+              $availability = $httpResponse.Content | ConvertFrom-Json
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.OpenAIRgName }}" -Name "${{ env.OpenAIServiceName }}"
+              if ($availability.isSubdomainAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the OpenAIServiceName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.reason 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployOpenAIServiceAndAiSearch }}" -eq "True" -or "${{ env.DeployOpenAIDemoApp }}" -eq "True") {
+              $payload = '{ "name": "${{ env.OpenAICognitiveSearchName }}", "type": "searchServices"}' 
+              $httpResponse = Invoke-AzRestMethod -Path "subscriptions/${{ secrets.SUBSCRIPTION_ID }}/providers/Microsoft.Search/checkNameAvailability?api-version=2023-11-01" -Payload $payload -Method POST
+              $availability = $httpResponse.Content | ConvertFrom-Json
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.OpenAIRgName }}" -Name "${{ env.OpenAICognitiveSearchName }}"
+              if ($availability.nameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the OpenAICognitiveSearchName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.reason 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployOpenAIDemoApp }}" -eq "True") {
+              $availability = Test-AzKeyVaultNameAvailability -Name '${{ env.OpenAIDemoKeyVaultName }}'
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.OpenAIRgName }}" -Name "${{ env.OpenAIDemoKeyVaultName }}"
+              if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the OpenAIDemoKeyVaultName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                throw $errorMessage
+              }
+            }
+            if ("${{ env.DeployOpenAIDemoApp }}" -eq "True") {
+              $payload = '{ "subdomainName": "${{ env.OpenAIDemoDocumentIntelligenceName }}", "type": "Microsoft.CognitiveServices/accounts"}' 
+              $httpResponse = Invoke-AzRestMethod -Path "subscriptions/${{ secrets.SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/checkDomainAvailability?api-version=2023-05-01" -Payload $payload -Method POST
+              $availability = $httpResponse.Content | ConvertFrom-Json
+              $resourceExists = Get-AzResource -ResourceGroupName "${{ env.OpenAIRgName }}" -Name "${{ env.OpenAIDemoDocumentIntelligenceName }}"
+              if ($availability.isSubdomainAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
+                $errorMessage = 'Please update the OpenAIDemoDocumentIntelligenceName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.reason 
+                throw $errorMessage
+              }
+            }
+          azPSVersion: "11.1.0"
+
+      - name: Deploy VNET
+        if: ${{ env.DeployWithCustomNetworking == 'True' && env.DeployNewVnet == 'True' && env.vnetName != env.VnetForResourcesName }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.VnetForResourcesRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/vnet.bicep
+          # Supply deployment parameter values.
+          parameters: vnetName=${{ env.VnetForResourcesName }} vnetAddressSpace=${{ env.NewVnetAddressSpace }} 
+          failOnStdErr: false
+
+      - name: Deploy Subnets, NSGs, and Optionally Firewall, Route Table, and Azure Bastion
+        if: ${{ env.DeployWithCustomNetworking == 'True' && env.DeployNewVnet == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.VnetForResourcesRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/vnet_resources.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/vnet_resources.json
+            vnetName=${{ env.VnetForResourcesName }} 
+            vnetAddressSpace=${{ env.NewVnetAddressSpace }} 
+            LogicAppSubnetName=${{ env.LogicAppSubnetName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            JumpBoxSubnetName=${{ env.JumpBoxSubnetName }} 
+            DeployVMswithBastion=${{ env.DeployVMswithBastion }} 
+            bastionName=${{ env.bastionName }} 
+            DeployMLWorkspace=${{ env.DeployMLWorkspace }} 
+          failOnStdErr: false
+
+      - name: Deploy New Private DNS Zones
+        if: ${{ env.DeployWithCustomNetworking == 'True' && env.CreateNewPrivateDNSZones == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.VnetForResourcesRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/private_endpoint_dns_zone_orchestrator.bicep
+          # Supply deployment parameter values.
+          parameters:
+            DeployDataLake=${{ env.DeployDataLake }} 
+            DeployLandingStorage=${{ env.DeployLandingStorage }} 
+            DeployKeyVault=${{ env.DeployKeyVault }} 
+            DeployAzureSQL=${{ env.DeployAzureSQL }} 
+            DeployADF=${{ env.DeployADF }} 
+            DeploySynapse=${{ env.DeploySynapse }} 
+            DeployPurview=${{ env.DeployPurview }} 
+            DeployLogicApp=${{ env.DeployLogicApp }} 
+            DeployMLWorkspace=${{ env.DeployMLWorkspace }} 
+            DeployCognitiveService=${{ env.DeployCognitiveService }} 
+            DeployEventHubNamespace=${{ env.DeployEventHubNamespace }}
+            DeployDatabricks=${{ env.DeployDatabricks }}
+            DeployADFPortalPrivateEndpoint=${{ env.DeployADFPortalPrivateEndpoint }} 
+            DeploySynapseWebPrivateEndpoint=${{ env.DeploySynapseWebPrivateEndpoint }} 
+            DeployPurviewPrivateEndpoints=${{ env.DeployPurviewPrivateEndpoints }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+          failOnStdErr: false
+
+      - name: Deploy VMs
+        if: ${{ env.DeployWithCustomNetworking == 'True' && env.DeployVMswithBastion == 'True'}}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.VnetForResourcesRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/vm.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/vm.json
+            virtualMachineName=${{ env.vmName }} 
+            numOfVMs=${{ env.vmsPerEnv }} 
+            VnetForResourcesRgName=${{ env.VnetForResourcesRgName }}
+            VnetForResourcesName=${{ env.VnetForResourcesName }}
+            JumpBoxSubnetName=${{ env.JumpBoxSubnetName }}
+            adminUsername=${{ secrets.VM_USERNAME }}
+            adminPassword=${{ secrets.VM_PASSWORD }}
+            AAD_Admin_Group_ID=${{ env.Entra_Group_Admin_ID }}
+          failOnStdErr: false
+
+      - name: Deploy Log Analytics
+        if: ${{ env.DeployLogAnalytics == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/loganalytics.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/loganalytics.json
+            location=${{ env.azureResourceLocation }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+          failOnStdErr: false
+
+      - name: Deploy Microsoft Fabric Capcaity
+        if: ${{ env.DeployFabricCapacity == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/fabric_capacity.bicep
+          # Supply deployment parameter values.
+          parameters:
+            location=${{ env.azureResourceLocation }}
+            fabricCapacityName=${{ env.fabricCapacityName }} 
+            adminEntraId=${{ env.servicePrincipalObjectId }}
+            sku=${{ env.fabricSKU }}
+          failOnStdErr: false
+
+      - name: Deploy Purview
+        if: ${{ env.DeployPurview == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/purview.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/purview.json
+            location=${{ env.azureResourceLocation }}
+            purviewName=${{ env.purviewName }} 
+            tags="${{ env.tags_single_quote }}"
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }}
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            ServicePrincipalHasOwnerRBACAtSubscription=${{ env.ServicePrincipalHasOwnerRBACAtSubscription }}
+            DeployPurviewPrivateEndpoints=${{ env.DeployPurviewPrivateEndpoints }}
+            DeployPurviewIngestionPrivateEndpoints=${{ env.DeployPurviewIngestionPrivateEndpoints }}
+          failOnStdErr: false
+
+      # Add Admin AAD Group as Purview Root Collection Administrator
+      - name: Add Admin AAD Group as Purview Root Collection Administrator
+        if: ${{ env.DeployPurview == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            az config set extension.use_dynamic_install=yes_without_prompt
+            az purview account add-root-collection-admin --name "${{ env.purviewName }}" --resource-group "${{ env.PrimaryRgName }}" --object-id "${{ env.Entra_Group_Admin_ID }}"
+          azPSVersion: "latest"
+
+      # Bicep Templates Cannot Change AAD Admin
+      # So Change AAD Admin Back to Service Principal if Azure SQL Already Exists
+      # So No Error is Thrown if Bicep Template Needs to be Rerun
+      - name: Set AAD Admin to Service Principal if Azure SQL Already Exists
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' || env.DeployAzureSQL == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Install-Module Az.Resources -Repository PSGallery -Force
+            $azuresql = Get-AzResource -ResourceGroupName ${{ env.PrimaryRgName }} -Name ${{ env.azureSQLServerName }}
+            if ( !([string]::IsNullOrEmpty($azuresql)) ) { 
+              az sql server ad-admin update --display-name "${{ env.servicePrincipalName }}" --object-id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" --server "${{ env.azureSQLServerName }}" --resource-group ${{ env.PrimaryRgName }}
+            }
+          azPSVersion: "latest"
+
+      - name: Deploy Data Lake
+        if: ${{ env.DeployDataLake == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/storageaccount.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/datalake.json
+            location=${{ env.azureResourceLocation }}
+            storageAccountName=${{ env.dataLakeName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }}      
+          failOnStdErr: false
+
+      - name: Deploy Landing Storage Account
+        if: ${{ env.DeployLandingStorage == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/storageaccount.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/landingstorage.json
+            location=${{ env.azureResourceLocation }}
+            storageAccountName=${{ env.landingStorageName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }}             
+          failOnStdErr: false
+  
+      - name: Deploy Key Vault
+        if: ${{ env.DeployKeyVault == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/keyvault.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/keyvault.json
+            location=${{ env.azureResourceLocation }}
+            keyVaultName=${{ env.keyVaultName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy Azure SQL Server and DB
+        if: ${{ env.DeployAzureSQL == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/azuresql.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/azuresql.json
+            location=${{ env.azureResourceLocation }}
+            azureSQLServerName=${{ env.azureSQLServerName }} 
+            azureSQLServerDBName=${{ env.azureSQLServerDBName }} 
+            AADName="${{ env.servicePrincipalName }}"
+            AADID=${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }}  
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            RedeploymentAfterNetworkingIsSetUp=${{ env.RedeploymentAfterNetworkingIsSetUp }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeStart=${{ env.IpRangeStart }}
+            IpRangeEnd=${{ env.IpRangeEnd }}
+          failOnStdErr: false
+
+      # Combine SQL Files into One for Deployment
+      - name: Combine SQL DDL Files into One for Deployment
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_logicapp_name', '${{ env.logicAppName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_service_principal_name', '${{ env.servicePrincipalName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeployLogicApp', '${{ env.DeployLogicApp }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_shared_services_group_name', '${{ env.Entra_Group_Shared_Service_Name }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_datafactory_or_synapse_name', '${{ env.dataFactoryName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_synapse_name', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeploySynapse', '${{ env.DeploySynapse }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+
+            Get-Content ./DeploymentComponents/azure_sql_artifacts/*/*.sql | Set-Content ./DeploymentComponents/azure_sql_artifacts/combined.sql
+          azPSVersion: "latest"  
+
+      - name: Deploy Combined SQL DDL File to Azure SQL DB
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
+        uses: azure/sql-action@v2.2.1
+        with:        
+          connection-string: 'Server=${{ env.azureSQLServerName }}.database.windows.net; Initial Catalog=${{ env.azureSQLServerDBName }}; Authentication=Active Directory Default' 
+          path: './DeploymentComponents/azure_sql_artifacts/combined.sql'
+
+      # Set Azure SQL AAD Admin Back to Group with Team Members
+      - name: Set Azure SQL AAD Admin to Group with Project Team Members
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' || env.DeployAzureSQL == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            az sql server ad-admin update --display-name "${{ env.Entra_Group_Shared_Service_Name }}" --object-id "${{ env.Entra_Group_Shared_Service_ID }}" --server "${{ env.azureSQLServerName }}" --resource-group ${{ env.PrimaryRgName }}
+          azPSVersion: "latest"
+
+      - name: Deploy Cognitive Services
+        if: ${{ env.DeployCognitiveService == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/cognitive_service.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/cognitive_service.json
+            location=${{ env.azureResourceLocation }}
+            cognitiveServiceName=${{ env.cognitiveServiceName }}
+            DeployKeyVault=${{ env.DeployKeyVault }}
+            keyVaultRgName=${{ env.PrimaryRgName }}
+            keyVaultName=${{ env.keyVaultName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy Event Hub Namespace
+        if: ${{ env.DeployEventHubNamespace == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/event_hub.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/event_hub.json
+            location=${{ env.azureResourceLocation }}
+            eventHubNamespaceName=${{ env.eventHubNamespaceName }} 
+            landingStorageName=${{ env.landingStorageName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy Stream Analytics
+        if: ${{ env.DeployStreamAnalytics == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/stream_analytics.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/stream_analytics.json
+            location=${{ env.azureResourceLocation }}
+            streamAnalyticsName=${{ env.streamAnalyticsName }} 
+          failOnStdErr: false
+
+      - name: Deploy Databricks Workspace
+        if: ${{ env.DeployDatabricks == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/databricks.bicep
+          # Supply deployment parameter values.
+          parameters:
+            location=${{ env.azureResourceLocation }}
+            tags="${{ env.tags_single_quote }}"
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            databricksWorkspaceName=${{ env.databricksWorkspaceName }}  
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployDatabricksInVnet=${{ env.DeployDatabricksInVnet }}
+            VnetForDatabricksRgName=${{ env.VnetForDatabricksRgName }}
+            VnetForDatabricksName=${{ env.VnetForDatabricksName }}
+            DatabricksPrivateSubnetName=${{ env.DatabricksPrivateSubnetName }} 
+            DatabricksPublicSubnetName=${{ env.DatabricksPublicSubnetName }}
+            VnetForDatabricksTransitSubscriptionId=${{ env.VnetForDatabricksTransitSubscriptionId }}
+            VnetForDatabricksTransitRgName=${{ env.VnetForDatabricksTransitRgName }}
+            VnetForDatabricksTransitName=${{ env.VnetForDatabricksTransitName }}
+            DatabricksTransitPESubnetName=${{ env.DatabricksTransitPESubnetName }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+          failOnStdErr: false
+
+      # Deploy Synapse
+      - name: Deploy Synapse Workspace
+        if: ${{ env.DeploySynapse == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/synapse.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/synapse.json
+            location=${{ env.azureResourceLocation }}
+            synapseWorkspaceName=${{ env.synapseWorkspaceName }}
+            tags="${{ env.tags_single_quote }}"
+            DeploySynapseWithDataExfiltrationProtection=${{ env.DeploySynapseWithDataExfiltrationProtection }}
+            dataLakeName=${{ env.dataLakeName }} 
+            DeployPurview=${{ env.DeployPurview }} 
+            purviewName=${{ env.purviewName }}
+            gitAccountName=${{ github.repository_owner }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            DeploySynapseWebPrivateEndpoint=${{ env.DeploySynapseWebPrivateEndpoint }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            RedeploymentAfterNetworkingIsSetUp=${{ env.RedeploymentAfterNetworkingIsSetUp }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeStart=${{ env.IpRangeStart }}
+            IpRangeEnd=${{ env.IpRangeEnd }}
+          failOnStdErr: false
+
+      # Deploy Data Factory
+      - name: Deploy ADF Workspace
+        if: ${{ env.DeployADF == 'True' }}
+        uses: Azure/arm-deploy@v1
+        id: dataFactoryDeploy
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/datafactory.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/datafactory.json
+            location=${{ env.azureResourceLocation }}
+            dataFactoryName=${{ env.dataFactoryName }}
+            landingStorageName=${{ env.landingStorageName }} 
+            dataLakeName=${{ env.dataLakeName }} 
+            keyVaultName=${{ env.keyVaultName }} 
+            DeployPurview=${{ env.DeployPurview }} 
+            purviewName=${{ env.purviewName }}
+            azureSQLServerName=${{ env.azureSQLServerName }}
+            DeploySynapse=${{ env.DeploySynapse }}
+            synapseWorkspaceName=${{ env.synapseWorkspaceName }}
+            gitAccountName=${{ github.repository_owner }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            DeployADFPortalPrivateEndpoint=${{ env.DeployADFPortalPrivateEndpoint }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            DeployCognitiveService=${{ env.DeployCognitiveService }}
+            cognitiveServiceName=${{ env.cognitiveServiceName }} 
+            DeployADFArtifacts=${{ env.DeployADFArtifacts }} 
+          failOnStdErr: false
+
+      # Deploy Synapse Pools. Currently Only Spark Pools Are Deployed
+      - name: Deploy Synapse Spark Pools
+        if: ${{ env.DeploySynapseSparkPools == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/synapse_pools.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/synapse_pools.json
+            location=${{ env.azureResourceLocation }}
+            synapseWorkspaceName=${{ env.synapseWorkspaceName }}
+          failOnStdErr: false
+
+  deploy-machine-learning-resources:
+    needs: [create-env-azure-resources]
+    uses: ./.github/workflows/machine_learning_resources.yml
+    with:
+      DeployMLWorkspace: ${{ needs.create-env-azure-resources.outputs.DeployMLWorkspace }}
+      DeployMLCompute: ${{ needs.create-env-azure-resources.outputs.DeployMLCompute }}
+      environment: ${{ inputs.environment }}
+      envFolderPath: ${{ inputs.envFolderPath }}
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+
+  deploy-logic-app-resources:
+    needs: [create-env-azure-resources]
+    uses: ./.github/workflows/logic_app_resources.yml
+    with:
+      DeployLogicApp: ${{ needs.create-env-azure-resources.outputs.DeployLogicApp }}
+      DeployLogicAppArtifacts: ${{ needs.create-env-azure-resources.outputs.DeployLogicAppArtifacts }}
+      environment: ${{ inputs.environment }}
+      envFolderPath: ${{ inputs.envFolderPath }}
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+
+  create-env-azure-resources-continued:
+    needs: [deploy-machine-learning-resources, deploy-logic-app-resources]
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/entra_assignments/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Create resource group for environment resources and get service principal name
+      - name: Set Env Variables Needed For Downstream Actions
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $spDetails = az ad sp show --id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" | ConvertFrom-Json  
+
+            # Service Principal Name
+            $servicePrincipalName = $spDetails.appDisplayName
+            Write-Output "::add-mask::$servicePrincipalName"
+            "servicePrincipalName=$servicePrincipalName" >> $env:GITHUB_ENV
+
+            # Service Principal AAD Identity ID
+            $servicePrincipalObjectId = $spDetails.id
+            Write-Output "::add-mask::$servicePrincipalObjectId"
+            "servicePrincipalObjectId=$servicePrincipalObjectId" >> $env:GITHUB_ENV
+
+            # Tags with Single Quotes For Bicep Templates
+            $tags_single_quote = '${{ env.tags }}' -replace '"', "'"
+            "tags_single_quote=$tags_single_quote" >> $env:GITHUB_ENV
+
+
+            if ( '${{ env.Entra_Groups_Data_Publishers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Publishers = '['+ '${{ env.Entra_Groups_Data_Publishers }}' + ']'
+              "Entra_Groups_Data_Publishers=$Entra_Groups_Data_Publishers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Producers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Producers = '['+ '${{ env.Entra_Groups_Data_Producers }}' + ']'
+              "Entra_Groups_Data_Producers=$Entra_Groups_Data_Producers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Consumers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Consumers = '['+ '${{ env.Entra_Groups_Data_Consumers }}' + ']'
+              "Entra_Groups_Data_Consumers=$Entra_Groups_Data_Consumers" >> $env:GITHUB_ENV
+            }
+
+            $Entra_Group_Admin_HashTable = '${{ env.Entra_Group_Admin }}' | ConvertFrom-Json
+            $Entra_Group_Admin_ID = $Entra_Group_Admin_HashTable.Group_ID
+            "Entra_Group_Admin_ID=$Entra_Group_Admin_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Admin_Name = $Entra_Group_Admin_HashTable.Group_Name
+            "Entra_Group_Admin_Name=$Entra_Group_Admin_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_HashTable = '${{ env.Entra_Group_Shared_Service }}' | ConvertFrom-Json
+            $Entra_Group_Shared_Service_ID = $Entra_Group_Shared_Service_HashTable.Group_ID
+            "Entra_Group_Shared_Service_ID=$Entra_Group_Shared_Service_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Shared_Service_Name = $Entra_Group_Shared_Service_HashTable.Group_Name
+            "Entra_Group_Shared_Service_Name=$Entra_Group_Shared_Service_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_HashTable = '${{ env.Entra_Group_Governance }}' | ConvertFrom-Json
+            $Entra_Group_Governance_ID = $Entra_Group_Governance_HashTable.Group_ID
+            "Entra_Group_Governance_ID=$Entra_Group_Governance_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Governance_Name = $Entra_Group_Governance_HashTable.Group_Name
+            "Entra_Group_Governance_Name=$Entra_Group_Governance_Name" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for environment resources and get service principal name
+      - name: Parse Entra Groups for Bicep
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # parse entra groups
+            $Entra_Group_Admin_Json = '${{ env.Entra_Group_Admin }}' -replace '"', "'"
+            "Entra_Group_Admin_Json=$Entra_Group_Admin_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_Json = '${{ env.Entra_Group_Shared_Service }}' -replace '"', "'"
+            "Entra_Group_Shared_Service_Json=$Entra_Group_Shared_Service_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_Json = '${{ env.Entra_Group_Governance }}' -replace '"', "'"
+            "Entra_Group_Governance_Json=$Entra_Group_Governance_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Publishers_Json = '${{ env.Entra_Groups_Data_Publishers }}' -replace '"', "'"
+            "Entra_Groups_Data_Publishers_Json=$Entra_Groups_Data_Publishers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Producers_Json = '${{ env.Entra_Groups_Data_Producers }}' -replace '"', "'"
+            "Entra_Groups_Data_Producers_Json=$Entra_Groups_Data_Producers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Consumers_Json = '${{ env.Entra_Groups_Data_Consumers }}' -replace '"', "'"
+            "Entra_Groups_Data_Consumers_Json=$Entra_Groups_Data_Consumers_Json" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      - name: Install Databricks CLI on Runner
+        if: ${{ env.DeployDatabricksCompute == 'True' || env.DeployDatabricksArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            sudo curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          azPSVersion: "latest"
+
+      - name: Create Databricks All-Purpose Clusters
+        if: ${{ env.DeployDatabricksCompute == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            cd "./DeploymentComponents/databricks"
+
+            $databricks = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.databricksWorkspaceName }}" -ExpandProperties
+            $databricks_workspace_url = 'https://' + $databricks.properties.workspaceUrl
+            $Env:DATABRICKS_HOST = "$databricks_workspace_url"
+
+            # get all existing databricks clusters so we can retrieve cluster ids
+            # this is necessary if we need to update an existing cluster
+            $databricks_clusters = (databricks api get /api/2.0/clusters/list | ConvertFrom-Json).clusters
+            
+            # for each cluster that needs to be deployed
+            $allPurposeComputeFolder = "./all_purpose_clusters/*"
+            $files = Get-ChildItem -Path "$allPurposeComputeFolder" -Include *.json
+            foreach($file in $files) {
+              $name = $file.name
+              $full_path = "./all_purpose_clusters/" + $name
+              $cluster_name = ((Get-Content $full_path) | ConvertFrom-Json).cluster_name
+              $cluster_id = ($databricks_clusters | Where-Object { $_.cluster_name -eq "$cluster_name" }).cluster_id 
+
+              $path_for_api_call = "all_purpose_clusters/" + $name
+
+              if ( "${{ env.DatabricksUsesUnityCatalog }}" -eq "True" ) { 
+                (Get-Content $full_path).replace("SECURITY_MODE_INSERTED_DURING_DEPLOYMENT", "USER_ISOLATION") | Set-Content $full_path
+              }
+              # if unity catalog is not used, use Entra paththrough for authentication  
+              else {
+                (Get-Content $full_path).replace("SECURITY_MODE_INSERTED_DURING_DEPLOYMENT", "LEGACY_PASSTHROUGH") | Set-Content $full_path
+              }  
+
+              # if no cluster exists with the cluster name, deploy a new cluster
+              if ( [string]::IsNullOrEmpty($cluster_id) ) { 
+                databricks api post /api/2.0/clusters/create --json @$path_for_api_call
+              }
+              # if a cluster exists with the cluster name, edit the existing cluster
+              else {
+                (Get-Content $full_path) -Replace 'CLUSTER_ID_INSERTED_DURING_DEPLOYMENT', "$cluster_id" | Set-Content $full_path
+                databricks api post /api/2.0/clusters/edit --json @$path_for_api_call
+              }               
+            }
+          azPSVersion: "latest"
+
+      - name: Deploy Databricks Notebooks
+        if: ${{ env.DeployDatabricksArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |            
+            cd "./DeploymentComponents/databricks"
+
+            # update databricks config with correct databricks url
+            $databricks = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.databricksWorkspaceName }}" -ExpandProperties
+            $databricks_workspace_url = 'https://' + $databricks.properties.workspaceUrl
+            $Env:DATABRICKS_HOST = "$databricks_workspace_url"
+            
+            # for each notebook
+            $notebookFolder = "./notebooks/*"
+            $files = Get-ChildItem -Path "$notebookFolder" -Include *.ipynb
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.ipynb','')
+              $full_path = "./notebooks/" + $name
+              $notebook = Get-Content $full_path -AsByteStream
+              $notebookBase64 = [Convert]::ToBase64String($notebook)
+
+              $Api_Call_Content = @{
+               "content" = "$notebookBase64"
+               "path" = "/Shared/$name_without_extension"                  
+               "language" = "Python"
+               "overwrite" = "true"
+               "format" = "JUPYTER"
+              }
+
+              $Api_Call_Content | ConvertTo-Json | Set-Content ./notebooks/$name_without_extension.json
+
+              databricks api post /api/2.0/workspace/import --json @notebooks/$name_without_extension.json   
+            }
+          azPSVersion: "latest"
+
+      # Create ADF Linked Services
+      - name: Create ADF Linked Services
+        if: ${{ env.DeployADFArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # data lake
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls.json) -Replace 'storageAccountName', '${{ env.dataLakeName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_adf1.json
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_DataLake" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_adf1.json -Force
+            
+            # landing storage
+            # data lake
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls.json) -Replace 'storageAccountName', '${{ env.landingStorageName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_adf2.json
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_LandingStorage" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_adf2.json -Force
+
+            # azure sql
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql.json) -Replace 'azureSQLServerName', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_adf1.json
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_adf1.json) -Replace 'azureSQLServerDBName', '${{ env.azureSQLServerDBName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_adf1.json
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_SQL_MetadataControl" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_adf1.json -Force
+            
+            # landing storage service principal auth
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_serviceprincipal.json) -Replace 'inputTenantID', '${{ secrets.TENANT_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_serviceprincipal_adf1.json
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_serviceprincipal_adf1.json) -Replace 'storageAccountName', '${{ env.landingStorageName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_serviceprincipal_adf1.json
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_LandingStorage_SPAuth" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls_serviceprincipal_adf1.json -Force
+
+            # M365
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/M365.json) -Replace 'inputTenantID', '${{ secrets.TENANT_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/M365_adf1.json
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_M365" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/M365_adf1.json -Force
+
+            # Oracle
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_Oracle" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/oracle.json -Force
+
+            # Azure SQL
+            Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_AzureSQL" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_source.json -Force
+
+            if ("${{ env.DeployDatabricks }}" -eq "True") { 
+              $databricks = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.databricksWorkspaceName }}" -ExpandProperties
+              $databricks_workspace_url = 'https://' + $databricks.properties.workspaceUrl
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json) -Replace 'databricksWorkspaceName', '${{ env.databricksWorkspaceName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json) -Replace 'databricksWorkspaceURL', "$databricks_workspace_url" | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json
+              Set-AzDataFactoryV2LinkedService -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "LS_AzureDatabricks_JobsCompute" -DefinitionFile ./DeploymentComponents/synapse_adf_artifacts/linked_services/databricks1.json -Force
+            }
+          azPSVersion: "latest"
+
+      - name: Create Data Factory Datasets
+        if: ${{ env.DeployADFArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $datasetFolder = "./DeploymentComponents/synapse_adf_artifacts/integration_datasets/*"
+            $files = Get-ChildItem -Path "$datasetFolder" -Include *.json
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.json','')
+              $full_path = $datasetFolder + $name
+              Set-AzDataFactoryV2Dataset -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "$name_without_extension" -DefinitionFile "$full_path" -Force
+            }
+          azPSVersion: "latest"
+
+      # Create Synapse Linked Services
+      - name: Create Synapse Linked Services
+        if: ${{ env.DeploySynapseArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $tokenOutput = Get-AzAccessToken -Resource "https://dev.azuresynapse.net"
+            $token = $tokenOutput.token
+            $auth = 'Bearer ' + $token
+            $headers = @{
+              Authorization = "$auth"
+            }
+
+            # data lake
+            $ls_body = (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls.json) -Replace 'storageAccountName', '${{ env.dataLakeName }}' | Out-String
+            $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_DataLake?api-version=2019-06-01-preview"
+            Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+            
+            # landing storage
+            $ls_body = (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/adls.json) -Replace 'storageAccountName', '${{ env.landingStorageName }}' | Out-String
+            $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_LandingStorage?api-version=2019-06-01-preview"
+            Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+            
+            # azure sql
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql.json) -Replace 'azureSQLServerName', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_synapse1.json
+            $ls_body = (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/azuresql_synapse1.json) -Replace 'azureSQLServerDBName', '${{ env.azureSQLServerDBName }}' | Out-String
+            $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_SQL_MetadataControl?api-version=2019-06-01-preview"
+            Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+            
+            # key vault
+            $ls_body = (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/keyvault.json) -Replace 'keyVaultName', '${{ env.keyVaultName }}' | Out-String
+            $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_KeyVault?api-version=2019-06-01-preview"
+            Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+          
+            # cognitive service
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice.json) -Replace 'cognitiveServiceName', '${{ env.cognitiveServiceName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json
+            $ls_body = (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/cognitiveservice_synapse1.json) -Replace 'azureLocation', '${{ env.azureResourceLocation }}' | Out-String
+            $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_CognitiveService?api-version=2019-06-01-preview"
+            Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+
+            if ("${{ env.DeployMLWorkspace }}" -eq "True") { 
+              # create ml workspace linked service
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json) -Replace 'resourceGroupNameInput', '${{ env.MlRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json) -Replace 'MachineLearningWorkspaceName', '${{ env.mlWorkspaceName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json
+
+              $ls_body = Get-Content "./DeploymentComponents/synapse_adf_artifacts/linked_services/machineLearningWorkspace.json" | Out-String
+
+              $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/linkedServices/LS_MachineLearningWorkspace?api-version=2019-06-01-preview"
+              
+              Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $ls_body
+            }
+          azPSVersion: "latest"
+
+      - name: Create Synapse Datasets and Notebooks
+        if: ${{ env.DeploySynapseArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $notebookFolder = "./DeploymentComponents/synapse_adf_artifacts/notebooks/"
+            $files = Get-ChildItem -Path "$notebookFolder" -Exclude "NotDeployed"
+
+            foreach($file in $files) {
+              $filename = $file.name
+              $full_path = $notebookFolder + $filename
+              
+              $folder_filename = $filename.split('&')
+              $synapsefolder = $folder_filename[0]
+              $synapseNbName = $folder_filename[1].replace('.ipynb','')
+              
+              Set-AzSynapseNotebook -WorkspaceName ${{ env.synapseWorkspaceName }} -Name "$synapseNbName" -DefinitionFile "$full_path" -FolderPath "$synapsefolder" -SparkPoolName "defaultSpark33" -ExecutorCount 1 -ExecutorSize "Medium"
+            }
+
+            $tokenOutput = Get-AzAccessToken -Resource "https://dev.azuresynapse.net"
+            $token = $tokenOutput.token
+            $auth = 'Bearer ' + $token
+            $headers = @{
+              Authorization = "$auth"
+            }
+
+            $datasetFolder = "./DeploymentComponents/synapse_adf_artifacts/integration_datasets/*"
+            $files = Get-ChildItem -Path "$datasetFolder" -Include *.json
+
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.json','')
+              $full_path = $datasetFolder + $name
+              $dataset_body = (Get-Content "$full_path") | Out-String
+              $api_url = "https://${{ env.synapseWorkspaceName }}.dev.azuresynapse.net/datasets/"+$name_without_extension+"?api-version=2020-12-01"
+              Invoke-RestMethod -Method 'PUT' -Uri $api_url -Headers $headers -Body $dataset_body
+            }
+          azPSVersion: "latest"
+
+      - name: Create Data Factory Pipelines, Dataflows, and Triggers
+        if: ${{ env.DeployADFArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $datasetFolder = "./DeploymentComponents/synapse_adf_artifacts/integration_datasets/SourceToLanding/*"
+            $files = Get-ChildItem -Path "$datasetFolder" -Include *.json
+
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.json','')
+              $full_path = $datasetFolder + $name
+              Set-AzDataFactoryV2Dataset -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "$name_without_extension" -DefinitionFile "$full_path" -Force
+            }
+            
+            $dataflowFolder = "./DeploymentComponents/synapse_adf_artifacts/dataflows/"
+            $files = Get-ChildItem -Path "$dataflowFolder" -Exclude "NotDeployed"
+
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.json','')
+              $full_path = $dataflowFolder + $name
+              Set-AzDataFactoryV2DataFlow -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name $name_without_extension -DefinitionFile "$full_path" -Force
+            }
+
+            $pipelineFolder = "./DeploymentComponents/synapse_adf_artifacts/pipelines/"
+            $files = Get-ChildItem -Path "$pipelineFolder" -Exclude "NotDeployed" | Sort-Object -Property Name -Descending
+
+            foreach($file in $files) {
+              $name = $file.name
+              if ("${{ env.UseDatabricksForIngestionNotebooks }}" -eq "False" -and "$name" -like "*_Databricks.json") { 
+                # If Synapse is being used for ingestion pipelines, don't deploy this Databricks related ADF pipeline
+                continue
+              }
+              if ("${{ env.UseDatabricksForIngestionNotebooks }}" -eq "True" -and "$name" -like "*_Synapse.json") { 
+                # If Databricks is being used for ingestion pipelines, don't deploy this Synapse related ADF pipeline
+                continue
+              }
+              $name_without_extension = $name.replace('_Synapse.json','').replace('_Databricks.json','').replace('.json','')
+              $full_path = $pipelineFolder + $name
+              Set-AzDataFactoryV2Pipeline -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name $name_without_extension -DefinitionFile "$full_path" -Force
+            }
+
+            $triggerFolder = "./DeploymentComponents/synapse_adf_artifacts/triggers/"
+            $files = Get-ChildItem -Path "$triggerFolder" -Exclude "NotDeployed"
+
+            foreach($file in $files) {
+              $name = $file.name
+              $name_without_extension = $name.replace('.json','')
+              $full_path = $triggerFolder + $name
+              (Get-Content $full_path) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content $full_path
+              (Get-Content $full_path) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content $full_path
+              (Get-Content $full_path) -Replace 'landingStorageName', '${{ env.landingStorageName }}' | Set-Content $full_path
+              (Get-Content $full_path) -Replace 'dataLakeName', '${{ env.dataLakeName }}' | Set-Content $full_path
+              Set-AzDataFactoryV2Trigger -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -Name "$name_without_extension" -DefinitionFile "$full_path" -Force
+              # start file created triggers
+              if ($name.ToUpper().Contains("FILECREATED")) {
+                Start-AzDataFactoryV2Trigger -ResourceGroupName "${{ env.PrimaryRgName }}" -DataFactoryName "${{ env.dataFactoryName }}" -TriggerName "$name_without_extension" -Force
+              } 
+            }
+          azPSVersion: "latest"   
+
+      - name: Create Synapse Managed Private Endpoints
+        if: ${{ env.DeploySynapse == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # Create Synapse Managed Private Endpoint to Data Lake Storage Account - DFS endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json) -Replace 'storageAccountName', '${{ env.dataLakeName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_DataLake_DFS -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_1.json"
+            }
+            # Create Synapse Managed Private Endpoint to Data Lake Storage Account - Blob endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json) -Replace 'storageAccountName', '${{ env.dataLakeName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_DataLake_Blob -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_1.json"
+            }
+            # Create Synapse Managed Private Endpoint to Landing Storage - DFS endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json) -Replace 'storageAccountName', '${{ env.landingStorageName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_LandingStorage_DFS -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_dfs_2.json"
+            }
+            # Create Synapse Managed Private Endpoint to Landing Storage - Blob endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json) -Replace 'storageAccountName', '${{ env.landingStorageName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_LandingStorage_Blob -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_2.json"
+            }
+            # Create Synapse Managed Private Endpoint to Key Vault
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployKeyVault }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json) -Replace 'keyVaultName', '${{ env.keyVaultName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_KeyVault -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/keyvault.json"
+            }
+            # Create Synapse Managed Private Endpoint to Azure SQL
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployAzureSQL }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json) -Replace 'azureSQLServerName', '${{ env.azureSQLServerName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_AzureSQL -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/azuresql.json"
+            }
+            # Create Synapse Managed Private Endpoint to Purview
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployPurview }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json) -Replace 'resourceGroupName', '${{ env.PrimaryRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json) -Replace 'purviewName', '${{ env.purviewName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_Purview -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/purview.json"
+            
+              $purview = Get-AzResource -Name ${{ env.purviewName }} -ResourceGroupName ${{ env.PrimaryRgName }} -ResourceType Microsoft.Purview/accounts -ExpandProperties
+              $purviewStorageResourceId = $purview.Properties.managedResources.storageAccount
+              $purviewStorageName = $purviewStorageResourceId.split('/')[-1]  
+              $purviewManagedRgName = $purview.Properties.managedResourceGroupName
+  
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue.json) -Replace 'resourceGroupName', "$purviewManagedRgName" | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json) -Replace 'storageAccountName', "$purviewStorageName" | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_PurviewStorage_Queue -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/queue_purviewStorage.json"
+  
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob.json) -Replace 'resourceGroupName', "$purviewManagedRgName" | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json) -Replace 'storageAccountName', "$purviewStorageName" | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_PurviewStorage_Blob -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/adls_blob_purviewStorage.json"
+            }
+            # Create Synapse Managed Private Endpoint to ML Workspace
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployMLWorkspace }}" -eq "True" -and "${{ env.DeployWithCustomNetworking }}" -eq "True" -and "${{ env.CreatePrivateEndpoints }}" -eq "True") { 
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json) -Replace 'resourceGroupName', '${{ env.MlRgName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json) -Replace 'subID', '${{ secrets.SUBSCRIPTION_ID }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json
+              (Get-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json) -Replace 'MachineLearningWorkspaceName', '${{ env.mlWorkspaceName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json
+              New-AzSynapseManagedPrivateEndpoint -WorkspaceName ${{ env.synapseWorkspaceName }} -Name MPE_MachineLearningWorkspace -DefinitionFile "./DeploymentComponents/synapse_adf_artifacts/managed_private_endpoints/machineLearningWorkspace.json"
+            }
+          azPSVersion: "latest"
+
+      - name: Approve Data Factory Managed Private Endpoints
+        if: ${{ env.DeployADF == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # Approve Data Factory Private Endpoint to Data Lake Storage Account - Blob Endpoint
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.dataLakeName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_DataLake_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Data Lake Storage Account - DFS Endpoint
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.dataLakeName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_DataLake_DFS') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Landing Storage Account - Blob Endpoint
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.landingStorageName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_LandingStorage_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Landing Storage Account - DFS Endpoint
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.landingStorageName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_LandingStorage_DFS') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Azure SQL
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployAzureSQL }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Sql/servers/${{ env.azureSQLServerName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_AzureSQL') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Key Vault
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployKeyVault }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.KeyVault/vaults/${{ env.keyVaultName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_KeyVault') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Data Factory Private Endpoint to Purview
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployPurview }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Purview/accounts/${{ env.purviewName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_Purview') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.dataFactoryName }}"
+              }
+  
+              if ("${{ env.ServicePrincipalHasOwnerRBACAtSubscription }}" -eq "True") { 
+                $purview = Get-AzResource -Name ${{ env.purviewName }} -ResourceGroupName ${{ env.PrimaryRgName }} -ResourceType Microsoft.Purview/accounts -ExpandProperties
+                $purviewStorageResourceId = $purview.Properties.managedResources.storageAccount
+  
+                $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "$purviewStorageResourceId"
+                $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_PurviewStorage_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+                if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                  Write-Output "No Private Endpoint to Approve"
+                } else {
+                  $privateEndpointId = $privateEndpoint.Id
+                  Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.dataFactoryName }}"
+                }
+  
+                $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "$purviewStorageResourceId"
+                $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_PurviewStorage_Queue') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+                if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                  Write-Output "No Private Endpoint to Approve"
+                } else {
+                  $privateEndpointId = $privateEndpoint.Id
+                  Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.dataFactoryName }}"
+                }
+              }
+            }
+            # Approve Data Factory Private Endpoint to Cognitive Service
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeployCognitiveService }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.CognitiveServices/accounts/${{ env.cognitiveServiceName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_CognitiveService') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.dataFactoryName }}"
+              }
+            }
+            # Approve Data Factory Private Endpoint to Synapse
+            if ("${{ env.DeployADF }}" -eq "True" -and "${{ env.DeploySynapse }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Synapse/workspaces/${{ env.synapseWorkspaceName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.dataFactoryName }}.MPE_Synapse') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+          azPSVersion: "latest"
+
+      - name: Approve Synapse Managed Private Endpoints
+        if: ${{ env.DeploySynapse == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # Approve Synapse Private Endpoint to Data Lake Storage Account - Blob Endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.dataLakeName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_DataLake_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Data Lake Storage Account - DFS Endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployDataLake }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.dataLakeName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_DataLake_DFS') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Landing Storage Account - Blob Endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.landingStorageName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_LandingStorage_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Landing Storage Account - DFS Endpoint
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployLandingStorage }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Storage/storageAccounts/${{ env.landingStorageName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_LandingStorage_DFS') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Azure SQL
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployAzureSQL }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Sql/servers/${{ env.azureSQLServerName }}" 
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_AzureSQL') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Key Vault
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployKeyVault }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.KeyVault/vaults/${{ env.keyVaultName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_KeyVault') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId
+              }
+            }
+            # Approve Synapse Private Endpoint to Purview
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployPurview }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.PrimaryRgName }}/providers/Microsoft.Purview/accounts/${{ env.purviewName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_Purview') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.synapseWorkspaceName }}"
+              }
+  
+              if ("${{ env.ServicePrincipalHasOwnerRBACAtSubscription }}" -eq "True") { 
+                $purview = Get-AzResource -Name ${{ env.purviewName }} -ResourceGroupName ${{ env.PrimaryRgName }} -ResourceType Microsoft.Purview/accounts -ExpandProperties
+                $purviewStorageResourceId = $purview.Properties.managedResources.storageAccount
+  
+                $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "$purviewStorageResourceId"
+                $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_PurviewStorage_Blob') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+                if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                  Write-Output "No Private Endpoint to Approve"
+                } else {
+                  $privateEndpointId = $privateEndpoint.Id
+                  Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.synapseWorkspaceName }}"
+                }
+  
+                $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "$purviewStorageResourceId"
+                $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_PurviewStorage_Queue') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+                if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                  Write-Output "No Private Endpoint to Approve"
+                } else {
+                  $privateEndpointId = $privateEndpoint.Id
+                  Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.synapseWorkspaceName }}"
+                }
+              }
+            }
+            # Approve Synapse Managed Private Endpoint to ML Workspace
+            if ("${{ env.DeploySynapse }}" -eq "True" -and "${{ env.DeployMLWorkspace }}" -eq "True" -and "${{ env.DeployWithCustomNetworking }}" -eq "True" -and "${{ env.CreatePrivateEndpoints }}" -eq "True") { 
+              $endpointList = Get-AzPrivateEndpointConnection -PrivateLinkResourceId "/subscriptions/${{ secrets.SUBSCRIPTION_ID }}/resourceGroups/${{ env.MlRgName }}/providers/Microsoft.MachineLearningServices/workspaces/${{ env.mlWorkspaceName }}"
+              $privateEndpoint = $endpointList | Where-Object { $_.PrivateEndpoint.Id.EndsWith('${{ env.synapseWorkspaceName }}.MPE_MachineLearningWorkspace') -and $_.PrivateLinkServiceConnectionState.Status -EQ 'Pending' }
+              if ( [string]::IsNullOrEmpty($privateEndpoint) ) { 
+                Write-Output "No Private Endpoint to Approve"
+              } else {
+                $privateEndpointId = $privateEndpoint.Id
+                Approve-AzPrivateEndpointConnection -ResourceId $privateEndpointId -Description "Approve for connection to ${{ env.synapseWorkspaceName }}"
+              }
+            }
+          azPSVersion: "latest"
+
+      - name: Deploy RBAC
+        if: ${{ env.Assign_RBAC_On_Deployment == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/rbac_dsdeployment_orchestrator.bicep
+          # Supply deployment parameter values.
+          parameters:
+            env=${{ inputs.envFolderPath }}
+            Service_Principal_Infra_Object_ID=${{ env.servicePrincipalObjectId }}
+            Assign_RBAC_for_CICD_Service_Principal=${{ env.Assign_RBAC_for_CICD_Service_Principal }}
+            Service_Principal_CICD_Object_ID=${{ env.Service_Principal_CICD_Object_ID }}
+            Entra_Group_Admin_Group_ID=${{ env.Entra_Group_Admin_ID }}
+            Entra_Group_Shared_Service_Group_ID=${{ env.Entra_Group_Shared_Service_ID }}
+            Assign_RBAC_for_Governance=${{ env.Assign_RBAC_for_Governance }}
+            Entra_Group_Governance_Group_ID=${{ env.Entra_Group_Governance_ID }}
+            Assign_RBAC_for_Publishers=${{ env.Assign_RBAC_for_Publishers }}
+            Entra_Groups_Data_Publishers=${{ env.Entra_Groups_Data_Publishers_Json }}
+            Assign_RBAC_for_Producers=${{ env.Assign_RBAC_for_Producers }}
+            Entra_Groups_Data_Producers=${{ env.Entra_Groups_Data_Producers_Json }}
+            Assign_RBAC_for_Consumers=${{ env.Assign_RBAC_for_Consumers }}
+            Entra_Groups_Data_Consumers=${{ env.Entra_Groups_Data_Consumers_Json }}
+            PrimaryRgName=${{ env.PrimaryRgName }}
+            DeployDataLake=${{ env.DeployDataLake }}
+            dataLakeName=${{ env.dataLakeName }}
+            DeployLandingStorage=${{ env.DeployLandingStorage }}
+            landingStorageName=${{ env.landingStorageName }}
+            DeployPurview=${{ env.DeployPurview }}
+            purviewName=${{ env.purviewName }}
+            DeployKeyVault=${{ env.DeployKeyVault }}
+            keyVaultName=${{ env.keyVaultName }}
+            DeployADF=${{ env.DeployADF }}
+            dataFactoryName=${{ env.dataFactoryName }}
+            DeploySynapse=${{ env.DeploySynapse }}
+            synapseWorkspaceName=${{ env.synapseWorkspaceName }}
+            DeployCognitiveService=${{ env.DeployCognitiveService }}
+            cognitiveServiceName=${{ env.cognitiveServiceName }}
+            DeployEventHubNamespace=${{ env.DeployEventHubNamespace }}
+            eventHubNamespaceName=${{ env.eventHubNamespaceName }}
+            DeployStreamAnalytics=${{ env.DeployStreamAnalytics }}
+            streamAnalyticsName=${{ env.streamAnalyticsName }}
+            DeployLogicApp=${{ env.DeployLogicApp }}
+            logicAppRG=${{ env.LogicAppRgName }}
+            logicAppName=${{ env.logicAppName }}
+            DeployMLWorkspace=${{ env.DeployMLWorkspace }}
+            MlRgName=${{ env.MlRgName }}
+            mlWorkspaceName=${{ env.mlWorkspaceName }} 
+            DeployDatabricks=${{ env.DeployDatabricks }} 
+            databricksWorkspaceName=${{ env.databricksWorkspaceName }} 
+          failOnStdErr: false
+
+      # Assign ACLs for Data Publishers on Folders in Landing Zone
+      - name: Assign ACLs for Data Publishers on Folders in Landing Zone
+        if: ${{ env.Assign_RBAC_On_Deployment == 'True' && env.Assign_RBAC_for_Publishers == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $ctx = New-AzStorageContext -StorageAccountName '${{ env.landingStorageName }}' -UseConnectedAccount
+            $filesystemName = "landing"
+            
+            $Entra_Groups_Data_Publishers_HashTable = '${{ env.Entra_Groups_Data_Publishers }}' | ConvertFrom-Json
+            foreach ( $publisher in $Entra_Groups_Data_Publishers_HashTable ) {
+                $EntityID = $publisher.Group_ID
+                $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName).ACL
+                $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission --x -InputObject $acl -DefaultScope
+                Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Acl $acl
+                $all_storage_paths = $publisher.Storage_Paths_Write_Access
+              foreach ( $path in $all_storage_paths ) {
+                $exists = az storage fs directory exists --account-name ${{ env.landingStorageName }} --auth-mode login --file-system $filesystemName --name $path | ConvertFrom-Json
+                if ($exists.exists -ne $true) {
+                  az storage fs directory create --account-name ${{ env.landingStorageName }} --auth-mode login --file-system $filesystemName --name $path
+                }
+                $all_directories = "$path" -split "/" -ne ""
+                $path_update = ""
+                foreach ( $directory in $all_directories ) {
+                  $path_update = $path_update + $directory + '/'
+                  $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path_update).ACL
+                  $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission --x -InputObject $acl -DefaultScope
+                  Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path_update -Acl $acl                
+                }
+                $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path).ACL
+                $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission rwx -InputObject $acl -DefaultScope
+                Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path -Acl $acl
+
+                $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path).ACL
+                $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission rwx -InputObject $acl
+                Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $filesystemName -Path $path -Acl $acl
+              }
+            }
+          azPSVersion: "latest"  
+
+      # Assign ACLs for Data Producers on Folders in Curated Zone
+      - name: Assign ACLs for Data Producers on Folders in Curated Zone
+        if: ${{ env.Assign_RBAC_On_Deployment == 'True' && env.Assign_RBAC_for_Producers == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $ctx = New-AzStorageContext -StorageAccountName '${{ env.dataLakeName }}' -UseConnectedAccount
+            $filesystemName = "curated"
+            
+            $Entra_Groups_Data_Producers_HashTable = '${{ env.Entra_Groups_Data_Producers }}' | ConvertFrom-Json
+            foreach ( $producer in $Entra_Groups_Data_Producers_HashTable ) {
+                $EntityID = $producer.Group_ID
+                $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName).ACL
+                $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission --x -InputObject $acl -DefaultScope
+                Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Acl $acl
+                $all_storage_paths = $producer.Storage_Paths_Write_Access
+              foreach ( $path in $all_storage_paths ) {
+                $exists = az storage fs directory exists --account-name ${{ env.dataLakeName }} --auth-mode login --file-system $filesystemName --name $path | ConvertFrom-Json
+                if ($exists.exists -ne $true) {
+                  az storage fs directory create --account-name ${{ env.dataLakeName }} --auth-mode login --file-system $filesystemName --name $path
+                }
+                $all_directories = "$path" -split "/" -ne ""
+                $path_update = ""
+                foreach ( $directory in $all_directories ) {
+                  $path_update = $path_update + $directory + '/'
+                  $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path_update).ACL
+                  $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission --x -InputObject $acl -DefaultScope
+                  Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path_update -Acl $acl                
+                }
+                $acl = (Get-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path).ACL
+                $acl = Set-AzDataLakeGen2ItemAclObject -AccessControlType group -EntityID $EntityID -Permission rwx -InputObject $acl -DefaultScope
+                Update-AzDataLakeGen2Item -Context $ctx -FileSystem $filesystemName -Path $path -Acl $acl
+                Update-AzDataLakeGen2AclRecursive -Context $ctx -FileSystem $filesystemName -Path $path -Acl $acl
+              }
+            }
+          azPSVersion: "latest"  
+
+      - name: Grant AAD Groups and ADF Rights to Synapse
+        if: ${{ env.DeploySynapse == 'True' || env.DeploySynapseArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # give ADF Contributor and Credential User rights to Synapse
+            if ("${{ env.DeployADF }}" -eq "True") { 
+              $dataFactoryDetails = Get-AzDataFactoryV2 -name "${{ env.dataFactoryName }}" -ResourceGroupName "${{ env.PrimaryRgName }}"
+              $adfSpId = $dataFactoryDetails.Identity.PrincipalId.Guid
+              az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse Contributor" --assignee $adfSpId
+              az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse Credential User" --assignee $adfSpId
+            }
+            # give AAD group admin rights to Synapse
+            # all other Synapse RBAC need to go before AAD Group Synapse RBAC
+            az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse Administrator" --assignee ${{ env.Entra_Group_Admin_ID }}
+            az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse SQL Administrator" --assignee ${{ env.Entra_Group_Shared_Service_ID }}
+            az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse Contributor" --assignee ${{ env.Entra_Group_Shared_Service_ID }}
+            az synapse role assignment create --workspace-name ${{ env.synapseWorkspaceName }} --role "Synapse Credential User" --assignee ${{ env.Entra_Group_Shared_Service_ID }}
+            Set-AzSynapseSqlActiveDirectoryAdministrator -WorkspaceName ${{ env.synapseWorkspaceName }} -ObjectId ${{  env.Entra_Group_Admin_ID }}
+          azPSVersion: "latest"
+
+      # Combine SQL Files into One for Deployment
+      - name: Create SQL File in Synapse for Serverless SQL Pool and SP's for Logic App
+        if: ${{ env.DeploySynapseSqlPools == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql) -Replace 'insert_logicapp_name', '${{ env.logicAppName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql) -Replace 'insert_synapse_name', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql
+            (Get-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql) -Replace 'insert_service_principal_name', '${{ env.servicePrincipalName }}' | Set-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/stored_procedures/z_addmanagedidentities.sql
+            Get-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/*/*.sql | Set-Content ./DeploymentComponents/synapse_adf_artifacts/serverless/RunForLogicApp.sql
+            $full_path = './DeploymentComponents/synapse_adf_artifacts/serverless/RunForLogicApp.sql'
+            Set-AzSynapseSqlScript -WorkspaceName ${{ env.synapseWorkspaceName }} -DefinitionFile "$full_path" -SqlDatabaseName master -SqlPoolName "Built-in"
+          azPSVersion: "latest"  
+
+      - name: Remove Public Network Access to Resources That Required it During Deployment
+        if: ${{ env.DeployResourcesWithPublicAccess == 'False' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            if ("${{ env.DeployWithCustomNetworking }}" -eq "True" -And "${{ env.AllowAccessToIpRange }}" -eq "True") { 
+              Write-Output "Access is Set to Be Filtered to Specific IPs"
+            } else {
+              if ("${{ env.DeploySynapse }}" -eq "True") { 
+                Update-AzSynapseWorkspace -Name ${{ env.synapseWorkspaceName }} -EnablePublicNetworkAccess $False
+              }
+              if ("${{ env.DeployAzureSQL }}" -eq "True") {
+                az sql server update --resource-group ${{ env.PrimaryRgName }} --name ${{ env.azureSQLServerName }} --enable-public-network false
+              }
+              if ("${{ env.DeployLogicApp }}" -eq "True") {  
+                Set-AzStorageAccount -ResourceGroupName "${{ env.LogicAppRgName }}" -Name "${{ env.logicAppStorageName }}" -PublicNetworkAccess "Disabled" -Force
+              }
+            }
+
+            if ("${{ env.DeployADF }}" -eq "True") { 
+              Update-AzDataFactoryV2 -ResourceGroupName ${{ env.PrimaryRgName }} -Name ${{ env.dataFactoryName }} -PublicNetworkAccess "Disabled"
+            }
+          
+            if ("${{ env.DeployMLWorkspace }}" -eq "True") { 
+              az extension add -n ml
+              az ml workspace update --resource-group ${{ env.MlRgName }} --name ${{ env.mlWorkspaceName }} --public-network-access "Disabled"
+            }
+          azPSVersion: "latest"
+
+  deploy-open-ai-resources:
+    needs: [create-env-azure-resources]
+    if: ${{ needs.create-env-azure-resources.outputs.DeployOpenAIServiceAndAiSearch == 'True' || needs.create-env-azure-resources.outputs.DeployOpenAIDemoApp == 'True' }}
+    uses: ./.github/workflows/open_ai_resources.yml
+    with:
+      environment: ${{ inputs.environment }}
+      envFolderPath: ${{ inputs.envFolderPath }}
+    secrets:
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+      DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+
+  #deploy-data-science-toolkit-infra:
+  #  needs: [create-env-azure-resources]
+  #  if: ${{ needs.create-env-azure-resources.outputs.DeployDataScienceToolkit == 'True' }}
+  #  uses: ./.github/workflows/data_science_toolkit_infra.yml
+  #  with:
+  #    environment: ${{ inputs.environment }}
+  #    envFolderPath: ${{ inputs.envFolderPath }}
+  #  secrets:
+  #    TENANT_ID: ${{ secrets.TENANT_ID }}
+  #    SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #    SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+  #    DNS_ZONE_SUBSCRIPTION_ID: ${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+#
+  #deploy-data-science-api-cicd:
+  #  needs: [create-env-azure-resources, deploy-data-science-toolkit-infra]
+  #  if: ${{ needs.create-env-azure-resources.outputs.DeployDataScienceToolkit == 'True' }}
+  #  uses: ./.github/workflows/data_science_api_cicd.yml
+  #  with:
+  #    environment: ${{ inputs.environment }}
+  #    envFolderPath: ${{ inputs.envFolderPath }}
+  #  secrets:
+  #    TENANT_ID: ${{ secrets.TENANT_ID }}
+  #    SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #    SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+#
+  #deploy-data-science-portal-cicd:
+  #  needs: [deploy-data-science-api-cicd, create-env-azure-resources, deploy-data-science-toolkit-infra]
+  #  if: ${{ needs.create-env-azure-resources.outputs.DeployDataScienceToolkit == 'True' }}
+  #  uses: ./.github/workflows/data_science_portal_cicd.yml
+  #  with:
+  #    environment: ${{ inputs.environment }}
+  #    envFolderPath: ${{ inputs.envFolderPath }}
+  #  secrets:
+  #    TENANT_ID: ${{ secrets.TENANT_ID }}
+  #    SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+  #    SERVICE_PRINCIPAL_CLIENT_ID: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}

@@ -1,0 +1,26 @@
+{
+	"name": "relationship-pxaydjfvml",
+	"properties": {
+		"Name": "relationship-pxaydjfvml",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "Ownership",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "0e561fee-0c4f-4b57-bc0b-a4ce7252d7ce"
+	},
+	"type": "RELATIONSHIP"
+}

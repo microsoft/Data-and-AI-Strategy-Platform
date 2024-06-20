@@ -1,0 +1,23 @@
+{
+	"name": "relationship-uqkxrjjpot",
+	"properties": {
+		"Name": "relationship-uqkxrjjpot",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "State",
+		"ToTableName": "AuditorStateSupervisor",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "StateName",
+				"ToColumnName": "State"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

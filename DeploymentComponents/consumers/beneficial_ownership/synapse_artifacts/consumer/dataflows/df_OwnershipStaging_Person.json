@@ -1,0 +1,114 @@
+{
+    "name": "df_OwnershipValidation_Person",
+    "properties": {
+        "folder": {
+            "name": "BeneficialOwnership/df_Validation"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "getJson"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sinkActivity"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "select"
+                },
+                {
+                    "name": "getID"
+                },
+                {
+                    "name": "rename"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "filter2"
+                },
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          statementID as string,",
+                "          statementType as string,",
+                "          identifiersid as string,",
+                "          personType as string,",
+                "          addressesaddress as string,",
+                "          namesfullName as string,",
+                "          nationalitiesname as string,",
+                "          nationalitiescode as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Person/Flattened/*']) ~> getJson",
+                "filter1 select(mapColumn(",
+                "          identifiers_id = identifiersid,",
+                "          names_fullName = namesfullName",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select",
+                "select derive(identifiers_id = split(identifiers_id,'/')[3],",
+                "          AttributeID = \"individual partner\") ~> getID",
+                "getID select(mapColumn(",
+                "          EntityID = identifiers_id,",
+                "          AttributeID,",
+                "          Value = names_fullName",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> rename",
+                "getJson filter(startsWith(identifiersid, '/company/')) ~> filter1",
+                "rename derive(Value = lower(Value)) ~> derivedColumn1",
+                "select1 filter(not(isNull(Value)) && length(Value) > 2",
+                "&& not(like(Value, '%?%') )) ~> filter2",
+                "derivedColumn1 aggregate(groupBy(EntityID,",
+                "          AttributeID,",
+                "          Value),",
+                "     count = count()) ~> aggregate1",
+                "aggregate1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "filter2 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     folderPath: 'BeneficialOwnership/OpenData/Ownership/Person/OwnershipDF_Processed/OpenData',",
+                "     truncate: true,",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> sinkActivity"
+            ]
+        }
+    }
+}

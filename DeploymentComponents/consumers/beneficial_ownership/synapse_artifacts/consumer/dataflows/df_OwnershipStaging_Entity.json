@@ -1,0 +1,107 @@
+{
+	"name": "df_OwnershipStaging_Entity",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Staging"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flatten1"
+				},
+				{
+					"name": "flatten2"
+				},
+				{
+					"name": "filter2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          addresses as (address as string, country as string, type as string)[],",
+				"          birthDate as date,",
+				"          dissolutionDate as date,",
+				"          entityType as string,",
+				"          foundingDate as date,",
+				"          identifiers as (id as string, scheme as string, schemeName as string, uri as string)[],",
+				"          incorporatedInJurisdiction as (code as string, name as string),",
+				"          interestedParty as (describedByEntityStatement as string, describedByPersonStatement as string, unspecified as (description as string, reason as string)),",
+				"          interests as (details as string, endDate as date, share as (exact as string, exclusiveMaximum as boolean, exclusiveMinimum as boolean, maximum as short, minimum as short), startDate as date, type as string)[],",
+				"          missingInfoReason as string,",
+				"          name as string,",
+				"          names as (fullName as string, type as string)[],",
+				"          nationalities as (code as string, name as string)[],",
+				"          personType as string,",
+				"          source as (description as string, retrievedAt as timestamp, type as string[], url as string),",
+				"          statementDate as date,",
+				"          statementID as string,",
+				"          statementType as string,",
+				"          subject as (describedByEntityStatement as string)",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'json',",
+				"     fileSystem: 'raw',",
+				"     documentForm: 'documentPerLine',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/AllData/v1/full/2023/02/08/*']) ~> source1",
+				"filter2 foldDown(unroll(addresses),",
+				"     mapColumn(",
+				"          statement_id = statementID,",
+				"          statement_type = statementType,",
+				"          entity_name = name,",
+				"          addresses_address = addresses.address,",
+				"          addresses_country = addresses.country,",
+				"          addresses_type = addresses.type,",
+				"          identifiers",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten1",
+				"flatten1 foldDown(unroll(identifiers),",
+				"     mapColumn(",
+				"          statement_id,",
+				"          statement_type,",
+				"          entity_name,",
+				"          addresses_address,",
+				"          addresses_country,",
+				"          addresses_type,",
+				"          identifiers_id = identifiers.id",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten2",
+				"source1 filter(statementType=='entityStatement') ~> filter2",
+				"flatten2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: 'BeneficialOwnership/OpenData/Ownership/Entity/Flattened',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

@@ -1,0 +1,180 @@
+{
+	"name": "Country",
+	"properties": {
+		"Name": "Country",
+		"EntityType": "TABLE",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Description": "The Country definition is based upon ISO 3166 Country Codes:\n\nEach country or territory has three codes:\n-  a two letter code \n-  a three letter code \n-  a three digit code\n\nThe numeric code identifies a physical territory, and the letters a country name. Thus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.\n\nCodes withdrawn from use may not be reused for five years. The two letter codes AA, QM to QZ, XA to XZ, and ZZ, all three letter codes beginning with those pairs, and numeric codes beginning 9, are available for individual use and will not be allocated to countries. The codes OO, OOO, and 000 are designated for use as \"escape codes\" to indicate that additional codes are being used.\n\nThe term \"country\" is perhaps a little misleading: not all the \"countries\" in ISO 3166 are actually independent.   Many of them are geographically separate territories that are legally portions or dependencies of other countries. Nonetheless the term \"country\" is used throughout. Where the code for a country includes territory also included in another code, a code for the exclusive part can be formed by replacing the second and third letters by X. \n\nISO 3166 was first issued in 1974, and the three digit numbers were mostly added in 1981.\n\nChanges to ISO 3166 are managed by the ISO 3166 Maintenance Agency (ISO3166/MA).\n\nExamples of ISO 3166 codes:\n\nCA CAN 124 Canada\nUS USA 840 United States of America",
+		"TableType": "EXTERNAL",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"StorageDescriptor": {
+			"Columns": [
+				{
+					"Name": "CountryId",
+					"Description": "The unique identifier of the Country.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "CountryId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "ExistingCountryCode",
+					"Description": "The unique identifier of the Country from Customer",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "IsoCountryName",
+					"Description": "The ISO country name.\n\nCountry               A 2     A 3     Number\n----------------------------------------------------------------------\nAALAND ISLANDS     AX      ALA     248\nAFGHANISTAN         AF      AFG     004\nALBANIA          AL      ALB     008\n\nThe term \"country\" is perhaps a little misleading: not all the \"countries\" in ISO 3166 are actually independent. \n\nMany of them are geographically separate territories that are legally portions or dependencies of other countries. Nonetheless the term \"country\" is used throughout. \n\nWhere the code for a country includes territory also included in another code, a code for the exclusive part can be formed by replacing the second and third letters by X.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "IsoCountryName"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "Iso2LetterCountryCode",
+					"Description": "The ISO 2 letter code identifying a country (A 2).\n\nCountry               A 2     A 3     Number\n----------------------------------------------------------------------\nAALAND ISLANDS     AX      ALA     248\nAFGHANISTAN         AF      AFG     004\nALBANIA          AL      ALB     008",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 2,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "Iso2LetterCountryCode"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "Iso3LetterCountryCode",
+					"Description": "The 3 letter country code (A 3).\n\nCountry               A 2     A 3     Number\n----------------------------------------------------------------------\nAALAND ISLANDS     AX      ALA     248\nAFGHANISTAN         AF      AFG     004\nALBANIA          AL      ALB     008\n\nThus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 3,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "Iso3LetterCountryCode"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "Iso3DigitCountryCode",
+					"Description": "The numeric code identifies a physical territory, and the letters a country name. \n\nThus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.",
+					"OriginDataTypeName": {
+						"TypeName": "decimal",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Precision": 3,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "decimal"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "Iso3DigitCountryCode"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "CapitalOrMajorCityName",
+					"Description": "The name of the capital or major city associated with the country",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsNullable": true,
+						"IsComplexType": false,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Country.cdm.json/Country",
+						"Name": "CapitalOrMajorCityName"
+					},
+					"DeltaFormatInvalidMessages": []
+				}
+			],
+			"Format": {
+				"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+				"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+				"FormatType": "parquet",
+				"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+				"Properties": {
+					"path": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/Country",
+					"FormatTypeSetToDatabaseDefault": true
+				}
+			},
+			"Source": {
+				"Provider": "ADLS",
+				"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/Country",
+				"Properties": {
+					"LinkedServiceName": "LS_DataLake",
+					"LocationSetToDatabaseDefault": true
+				}
+			},
+			"Properties": {
+				"textinputformat.record.delimiter": ",",
+				"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+				"derivedModelAttributeInfo": "{\"attributeReferences\":{\"CountryId\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"CountryId\"},\"IsoCountryName\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"IsoCountryName\"},\"Iso2LetterCountryCode\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso2LetterCountryCode\"},\"Iso3LetterCountryCode\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso3LetterCountryCode\"},\"Iso3DigitCountryCode\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso3DigitCountryCode\"},\"CapitalOrMajorCityName\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"CapitalOrMajorCityName\"}}}"
+			},
+			"Compressed": false,
+			"IsStoredAsSubdirectories": false
+		},
+		"Properties": {
+			"DerivedModelEntityInfo": "{\"entityDirectives\":{\"name\":\"Country\",\"description\":\"The Country definition is based upon ISO 3166 Country Codes:\\n\\nEach country or territory has three codes:\\n-  a two letter code \\n-  a three letter code \\n-  a three digit code\\n\\nThe numeric code identifies a physical territory, and the letters a country name. Thus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.\\n\\nCodes withdrawn from use may not be reused for five years. The two letter codes AA, QM to QZ, XA to XZ, and ZZ, all three letter codes beginning with those pairs, and numeric codes beginning 9, are available for individual use and will not be allocated to countries. The codes OO, OOO, and 000 are designated for use as \\\"escape codes\\\" to indicate that additional codes are being used.\\n\\nThe term \\\"country\\\" is perhaps a little misleading: not all the \\\"countries\\\" in ISO 3166 are actually independent.   Many of them are geographically separate territories that are legally portions or dependencies of other countries. Nonetheless the term \\\"country\\\" is used throughout. Where the code for a country includes territory also included in another code, a code for the exclusive part can be formed by replacing the second and third letters by X. \\n\\nISO 3166 was first issued in 1974, and the three digit numbers were mostly added in 1981.\\n\\nChanges to ISO 3166 are managed by the ISO 3166 Maintenance Agency (ISO3166/MA).\\n\\nExamples of ISO 3166 codes:\\n\\nCA CAN 124 Canada\\nUS USA 840 United States of America\",\"baseEntityReference\":{\"name\":\"Country\",\"path\":\"Country.cdm.json/Country\"},\"primaryKey\":[\"CountryId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"CountryId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of the Country.\",\"isNullable\":false,\"name\":\"CountryId\"},{\"type\":\"New\",\"dataType\":\"integer\",\"description\":\"The unique identifier of the Country from Customer\",\"isNullable\":false,\"name\":\"ExistingCountryCode\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"IsoCountryName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The ISO country name.\\n\\nCountry               A 2     A 3     Number\\n----------------------------------------------------------------------\\nAALAND ISLANDS     AX      ALA     248\\nAFGHANISTAN         AF      AFG     004\\nALBANIA          AL      ALB     008\\n\\nThe term \\\"country\\\" is perhaps a little misleading: not all the \\\"countries\\\" in ISO 3166 are actually independent. \\n\\nMany of them are geographically separate territories that are legally portions or dependencies of other countries. Nonetheless the term \\\"country\\\" is used throughout. \\n\\nWhere the code for a country includes territory also included in another code, a code for the exclusive part can be formed by replacing the second and third letters by X.\",\"isNullable\":true,\"name\":\"IsoCountryName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso2LetterCountryCode\"},\"dataType\":\"string\",\"dataTypeLength\":2,\"description\":\"The ISO 2 letter code identifying a country (A 2).\\n\\nCountry               A 2     A 3     Number\\n----------------------------------------------------------------------\\nAALAND ISLANDS     AX      ALA     248\\nAFGHANISTAN         AF      AFG     004\\nALBANIA          AL      ALB     008\",\"isNullable\":true,\"name\":\"Iso2LetterCountryCode\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso3LetterCountryCode\"},\"dataType\":\"string\",\"dataTypeLength\":3,\"description\":\"The 3 letter country code (A 3).\\n\\nCountry               A 2     A 3     Number\\n----------------------------------------------------------------------\\nAALAND ISLANDS     AX      ALA     248\\nAFGHANISTAN         AF      AFG     004\\nALBANIA          AL      ALB     008\\n\\nThus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.\",\"isNullable\":true,\"name\":\"Iso3LetterCountryCode\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"Iso3DigitCountryCode\"},\"dataType\":\"decimal\",\"dataTypeLength\":3,\"description\":\"The numeric code identifies a physical territory, and the letters a country name. \\n\\nThus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.\",\"isNullable\":true,\"scale\":0,\"name\":\"Iso3DigitCountryCode\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Country.cdm.json/Country\",\"name\":\"CapitalOrMajorCityName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of the capital or major city associated with the country\",\"isNullable\":true,\"name\":\"CapitalOrMajorCityName\"}]}}}",
+			"Description": "The Country definition is based upon ISO 3166 Country Codes:\n\nEach country or territory has three codes:\n-  a two letter code \n-  a three letter code \n-  a three digit code\n\nThe numeric code identifies a physical territory, and the letters a country name. Thus when Germany reunified, it kept DE/DEU but changed from 280 to 276, while when Southern Rhodesia was renamed Zimbabwe it stayed 716 but changed from RH/RHO to ZW/ZWE.\n\nCodes withdrawn from use may not be reused for five years. The two letter codes AA, QM to QZ, XA to XZ, and ZZ, all three letter codes beginning with those pairs, and numeric codes beginning 9, are available for individual use and will not be allocated to countries. The codes OO, OOO, and 000 are designated for use as \"escape codes\" to indicate that additional codes are being used.\n\nThe term \"country\" is perhaps a little misleading: not all the \"countries\" in ISO 3166 are actually independent.   Many of them are geographically separate territories that are legally portions or dependencies of other countries. Nonetheless the term \"country\" is used throughout. Where the code for a country includes territory also included in another code, a code for the exclusive part can be formed by replacing the second and third letters by X. \n\nISO 3166 was first issued in 1974, and the three digit numbers were mostly added in 1981.\n\nChanges to ISO 3166 are managed by the ISO 3166 Maintenance Agency (ISO3166/MA).\n\nExamples of ISO 3166 codes:\n\nCA CAN 124 Canada\nUS USA 840 United States of America",
+			"DisplayFolderInfo": "{\"name\":\"Geography\",\"colorCode\":\"#630454\"}",
+			"PrimaryKeys": "CountryId",
+			"spark.sql.sources.provider": "parquet"
+		},
+		"Retention": 0,
+		"Temporary": false,
+		"IsRewriteEnabled": false,
+		"Partitioning": {
+			"PartitionFunctionType": null,
+			"Keys": null
+		}
+	},
+	"type": "TABLE"
+}

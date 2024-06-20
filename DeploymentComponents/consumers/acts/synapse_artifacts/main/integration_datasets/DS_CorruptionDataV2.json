@@ -1,0 +1,108 @@
+{
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_DataLake",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": "Corruption_Data_old.csv",
+                "folderPath": "Tax/Undefined/CorruptionData/v2/full/2022/10/05",
+                "fileSystem": "raw"
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": [
+            {
+                "name": "State",
+                "type": "String"
+            },
+            {
+                "name": "Sector",
+                "type": "String"
+            },
+            {
+                "name": "Month Year",
+                "type": "String"
+            },
+            {
+                "name": "TaxpayerID",
+                "type": "String"
+            },
+            {
+                "name": "VAT",
+                "type": "String"
+            },
+            {
+                "name": "VAT Target",
+                "type": "String"
+            },
+            {
+                "name": "VAT Gap",
+                "type": "String"
+            },
+            {
+                "name": "Anomaly Index",
+                "type": "String"
+            },
+            {
+                "name": "Fraud Risk Score​",
+                "type": "String"
+            },
+            {
+                "name": "Auditor​",
+                "type": "String"
+            },
+            {
+                "name": "Auditor action​",
+                "type": "String"
+            },
+            {
+                "name": "Auditor Supervisor​",
+                "type": "String"
+            },
+            {
+                "name": "Penalty charged​",
+                "type": "String"
+            },
+            {
+                "name": "Time to close​",
+                "type": "String"
+            },
+            {
+                "name": "Closing approved by​",
+                "type": "String"
+            },
+            {
+                "name": "Additional Penalty / Action",
+                "type": "String"
+            },
+            {
+                "name": "Remarks/Findings",
+                "type": "String"
+            },
+            {
+                "name": "Mark",
+                "type": "String"
+            },
+            {
+                "name": "Auditor1",
+                "type": "String"
+            },
+            {
+                "name": "Auditor Supervisor 1",
+                "type": "String"
+            },
+            {
+                "name": "Month",
+                "type": "String"
+            }
+        ]
+    }
+}

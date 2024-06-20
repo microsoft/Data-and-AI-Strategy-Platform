@@ -1,0 +1,138 @@
+{
+	"name": "df_loadAuditDetails_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "AuditDetailsource"
+				},
+				{
+					"name": "Taxpayer"
+				}
+			],
+			"sinks": [
+				{
+					"name": "AuditData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "onlywithCustomerID"
+				},
+				{
+					"name": "derivedColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerId as string,",
+				"          TaxpayerId as string,",
+				"          AuditorID as string,",
+				"          AuditorAction as string,",
+				"          AuditorSupervisor as string,",
+				"          PenaltyCharged as string,",
+				"          TimeToClose as string,",
+				"          ClosingApprovedBy as string,",
+				"          AdditionalPenaltyAction as string,",
+				"          RemarksFindings as string,",
+				"          Mark as string,",
+				"          DateofAction as string,",
+				"          Sector as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/AuditDetails/*']) ~> AuditDetailsource",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality1 as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"derivedColumn1 select(mapColumn(",
+				"          CustomerId = Taxpayer@TaxpayerId,",
+				"          TaxpayerId = OriginalTaxpayerID,",
+				"          {Auditor​ID} = AuditorID,",
+				"          AuditorAction,",
+				"          AuditorSupervisor,",
+				"          PenaltyCharged,",
+				"          TimeToClose,",
+				"          ClosingApprovedBy,",
+				"          AdditionalPenaltyAction,",
+				"          RemarksFindings,",
+				"          Mark,",
+				"          DateofAction,",
+				"          Sector",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"filter1, Taxpayer join(AuditDetailsource@TaxpayerId == OriginalTaxpayerID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"AuditDetailsource filter(not(isNull(TaxpayerId))) ~> filter1",
+				"join1 filter(not(isNull(CustomerId))) ~> onlywithCustomerID",
+				"onlywithCustomerID derive(DateofAction = toDate(DateofAction)) ~> derivedColumn1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'AuditDetails',",
+				"     input(",
+				"          CustomerId as long,",
+				"          TaxpayerId as string,",
+				"          AuditorID as string,",
+				"          AuditorAction as string,",
+				"          AuditorSupervisor as string,",
+				"          PenaltyCharged as string,",
+				"          TimeToClose as string,",
+				"          ClosingApprovedBy as string,",
+				"          AdditionalPenaltyAction as string,",
+				"          RemarksFindings as string,",
+				"          Mark as string,",
+				"          DateofAction as date,",
+				"          Sector as string",
+				"     )) ~> AuditData"
+			]
+		}
+	}
+}

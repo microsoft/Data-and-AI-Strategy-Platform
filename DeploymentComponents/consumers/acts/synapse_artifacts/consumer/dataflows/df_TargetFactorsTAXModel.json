@@ -1,0 +1,52 @@
+{
+    "name": "df_TargetFactorsTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "TargetFactors"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "TargetFactorTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> TargetFactors",
+                "TargetFactors sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'TargetFactors') ~> TargetFactorTAXModel"
+            ]
+        }
+    }
+}

@@ -1,0 +1,14 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "streamingUnits": {
+        "value": 3
+      },
+      "compatibilityLevel": {
+        "value": "1.2"
+      }
+    }
+}

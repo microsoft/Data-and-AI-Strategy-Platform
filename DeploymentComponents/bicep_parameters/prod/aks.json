@@ -1,0 +1,62 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterTier": {
+            "value": "Paid"
+        },
+        "kubernetesVersion": {
+            "value": "1.23.12"
+        },
+        "kubernetesAutomaticUpgrade": {
+            "value": "patch"
+        },
+        "vm_sku": {
+            "value": "Standard_D16ds_v4"
+        },
+        "nodecount": {
+            "value": 3
+        },
+        "enableAutoScaling": {
+            "value": true
+        },
+        "minnodecount": {
+            "value": 1
+        },
+        "maxnodecount": {
+            "value": 10
+        },
+        "maxPods": {
+            "value": 110
+        },
+        "enableRBAC": {
+            "value": true
+        },
+        "disableLocalAccounts": {
+            "value": false
+        },
+        "azureRbac": {
+            "value": true
+        },
+        "enableHttpApplicationRouting": {
+            "value": false
+        },
+        "enableAzurePolicy": {
+            "value": false
+        },
+        "enableSecretStoreCSIDriver": {
+            "value": false
+        },
+        "serviceCidr": {
+            "value": "10.150.0.0/16"
+        },
+        "dnsServiceIP": {
+            "value": "10.150.0.10"
+        },
+        "dockerBridgeCidr": {
+            "value": "172.17.0.1/16"
+        }
+    }
+}

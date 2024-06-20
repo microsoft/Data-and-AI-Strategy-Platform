@@ -1,0 +1,45 @@
+{
+    "name": "DS_Landing_Zip_File",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_LandingStorage",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "container": {
+                "type": "string"
+            },
+            "folderPath": {
+                "type": "string"
+            },
+            "fileName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "LandingStorage"
+        },
+        "annotations": [],
+        "type": "Binary",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@dataset().folderPath",
+                    "type": "Expression"
+                },
+                "fileSystem": {
+                    "value": "@dataset().container",
+                    "type": "Expression"
+                }
+            },
+            "compression": {
+                "type": "ZipDeflate"
+            }
+        }
+    }
+}

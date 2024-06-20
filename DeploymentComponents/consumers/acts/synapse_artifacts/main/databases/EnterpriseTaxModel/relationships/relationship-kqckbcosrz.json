@@ -1,0 +1,23 @@
+{
+	"name": "relationship-kqckbcosrz",
+	"properties": {
+		"Name": "relationship-kqckbcosrz",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "TaxpayerStateSector",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "OriginalTaxpayerID",
+				"ToColumnName": "TaxpayerId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

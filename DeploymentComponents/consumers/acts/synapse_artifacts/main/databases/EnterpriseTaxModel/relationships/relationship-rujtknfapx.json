@@ -1,0 +1,26 @@
+{
+	"name": "relationship-rujtknfapx",
+	"properties": {
+		"Name": "relationship-rujtknfapx",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Invoice",
+		"ToTableName": "InvoiceLine",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "InvoiceId",
+				"ToColumnName": "InvoiceId"
+			}
+		],
+		"RelationshipType": 0,
+		"Properties": {
+			"DerivedModelRelationshipInfo": "{\"baseRelationship\":{\"fromEntity\":\"Invoice.cdm.json/Invoice\",\"toEntity\":\"InvoiceLine.cdm.json/InvoiceLine\",\"joinPairs\":[{\"fromAttribute\":\"InvoiceId\",\"toAttribute\":\"InvoiceId\"}]}}"
+		}
+	},
+	"type": "RELATIONSHIP"
+}

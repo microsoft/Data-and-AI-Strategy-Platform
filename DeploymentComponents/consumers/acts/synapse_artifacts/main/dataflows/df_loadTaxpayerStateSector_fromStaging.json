@@ -1,0 +1,106 @@
+{
+	"name": "df_loadTaxpayerStateSector_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "StateSector"
+				},
+				{
+					"name": "Taxpayer"
+				}
+			],
+			"sinks": [
+				{
+					"name": "TaxpayerStateSector"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          TaxpayerId as string,",
+				"          StateId as string,",
+				"          StateName as string,",
+				"          Date as string,",
+				"          Sector as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/TaxpayerStateSector/*']) ~> StateSector",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"join1 derive(Date = toDate(Date)) ~> derivedColumn1",
+				"StateSector, Taxpayer join(StateSector@TaxpayerId == OriginalTaxpayerID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"derivedColumn1 select(mapColumn(",
+				"          TaxpayerId = Taxpayer@TaxpayerId,",
+				"          StateId,",
+				"          StateName,",
+				"          Date,",
+				"          Sector",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'TaxpayerStateSector',",
+				"     input(",
+				"          TaxpayerId as string,",
+				"          StateId as string,",
+				"          StateName as string,",
+				"          Date as date,",
+				"          Sector as string",
+				"     )) ~> TaxpayerStateSector"
+			]
+		}
+	}
+}

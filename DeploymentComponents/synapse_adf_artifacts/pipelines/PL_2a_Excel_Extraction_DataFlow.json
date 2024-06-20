@@ -1,0 +1,170 @@
+{
+    "properties": {
+        "activities": [
+            {
+                "name": "For Each Sheet",
+                "type": "ForEach",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@json(pipeline().parameters.sheetConfig)",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "Extract Excel Sheet",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "1.00:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "DF_ExcelSheetExtraction",
+                                    "type": "DataFlowReference",
+                                    "parameters": {
+                                        "fileName": {
+                                            "value": "'@{pipeline().parameters.fileName}'",
+                                            "type": "Expression"
+                                        },
+                                        "folderPath": {
+                                            "value": "'@{pipeline().parameters.folderPath}'",
+                                            "type": "Expression"
+                                        },
+                                        "container": {
+                                            "value": "'@{pipeline().parameters.container}'",
+                                            "type": "Expression"
+                                        },
+                                        "sheetname": {
+                                            "value": "'@{item().SheetName}'",
+                                            "type": "Expression"
+                                        },
+                                        "range": {
+                                            "value": "'@{concat('A', item().HeaderRow)}'",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        },
+                        {
+                            "name": "Copy File So Blob Created Trigger Triggers",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Extract Excel Sheet",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "BinarySource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": false,
+                                        "deleteFilesAfterCompletion": true
+                                    },
+                                    "formatSettings": {
+                                        "type": "BinaryReadSettings"
+                                    }
+                                },
+                                "sink": {
+                                    "type": "BinarySink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "skipErrorFile": {
+                                    "dataInconsistency": false
+                                },
+                                "validateDataConsistency": true
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DS_Landing_Binary_File",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": {
+                                            "value": "@pipeline().parameters.container",
+                                            "type": "Expression"
+                                        },
+                                        "folderPath": {
+                                            "value": "@pipeline().parameters.folderPath",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@concat(split(pipeline().parameters.fileName,'.')[0]\n,'_',item().SheetName,'_temp.csv')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "DS_Landing_Binary_File",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": {
+                                            "value": "@pipeline().parameters.container",
+                                            "type": "Expression"
+                                        },
+                                        "folderPath": {
+                                            "value": "@pipeline().parameters.folderPath",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@concat(split(pipeline().parameters.fileName,'.')[0]\n,'_',item().SheetName,'.csv')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "fileName": {
+                "type": "string"
+            },
+            "folderPath": {
+                "type": "string"
+            },
+            "sheetConfig": {
+                "type": "string"
+            },
+            "container": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-02-20T20:12:34Z"
+    }
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-drtcimwymy",
+	"properties": {
+		"Name": "relationship-drtcimwymy",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "FraudRiskOutput",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxpayerId",
+				"ToColumnName": "CustomerID"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-ivetclhwql",
+	"properties": {
+		"Name": "relationship-ivetclhwql",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "Invoice",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxpayerId",
+				"ToColumnName": "CustomerAccountId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

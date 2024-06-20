@@ -1,0 +1,71 @@
+{
+	"name": "df_invoiceload_state_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "FactInvoice"
+				}
+			],
+			"sinks": [
+				{
+					"name": "State"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          StateId as string,",
+				"          OriginalStateID as string,",
+				"          StateName as string,",
+				"          CensusDivisionId as string,",
+				"          FipsCode as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/State/*']) ~> FactInvoice",
+				"FactInvoice filter(not(isNull(OriginalStateID))) ~> filter1",
+				"filter1 keyGenerate(output(StateID as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 select(mapColumn(",
+				"          StateId = surrogateKey1@StateID,",
+				"          OriginalStateID,",
+				"          StateName,",
+				"          CensusDivisionId,",
+				"          FipsCode",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'State') ~> State"
+			]
+		}
+	}
+}

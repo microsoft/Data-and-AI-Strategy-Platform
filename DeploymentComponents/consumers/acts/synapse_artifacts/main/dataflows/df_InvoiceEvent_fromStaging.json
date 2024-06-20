@@ -1,0 +1,121 @@
+{
+    "name": "df_InvoiceEvent_fromStaging",
+    "properties": {
+        "folder": {
+            "name": "df_LakeDBLoad/OperationalMapped"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "InvoiceEvent"
+                },
+                {
+                    "name": "Invoice"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "InvoiceEventDB"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "join1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          InvoiceId as string,",
+                "          Original_InvoiceID as string,",
+                "          InvoiceEventType as string,",
+                "          EventDate as string,",
+                "          EventDescription as string,",
+                "          EventReason as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['EnterpriseTaxModel/InvoiceEvent/*']) ~> InvoiceEvent",
+                "source(output(",
+                "          InvoiceId as string,",
+                "          OriginalInvoiceID as string,",
+                "          CustomerAccountId as long,",
+                "          TaxPayerId as string,",
+                "          originalTaxPayerID as string,",
+                "          InvoiceDate as date,",
+                "          InvoiceToName as string,",
+                "          InvoiceToPartyId as long,",
+                "          InvoiceSoldToState as string,",
+                "          InvoiceSoldToSector as string,",
+                "          InvoiceToLocationId as integer,",
+                "          InvoiceToTelephoneNumber as decimal(15,0),",
+                "          InvoiceToFaxNumber as decimal(15,0),",
+                "          InvoiceToEmailAddress as string,",
+                "          InvoiceNote as string,",
+                "          TotalInvoiceProductAmount as decimal(18,2),",
+                "          TotalInvoiceChargesAmount as decimal(18,2),",
+                "          TotalInvoiceAdjustmentsAmount as decimal(18,2),",
+                "          TotalInvoiceTaxesAmount as decimal(18,2),",
+                "          TotalInvoiceAmount as decimal(18,2),",
+                "          OrderId as long,",
+                "          InvoiceModeId as integer,",
+                "          IsoCurrencyCode as string,",
+                "          InvoiceStatusId as integer,",
+                "          IsoLanguageId as integer,",
+                "          InvoiceSeriesNumber as string,",
+                "          InvoiceLatestEvent as string,",
+                "          InvoiceLatestEventDate as string,",
+                "          InvoiceDestination as string,",
+                "          InvoiceFinalConsumer as string,",
+                "          InvoiceStateTaxpayer as string,",
+                "          InvoiceBuyerPresent as string,",
+                "          InvoiceNumber as string,",
+                "          Year as integer",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'EnterpriseTaxModel',",
+                "     tableName: 'Invoice') ~> Invoice",
+                "InvoiceEvent filter(not(isNull(Original_InvoiceID))) ~> filter1",
+                "join1 select(mapColumn(",
+                "          InvoiceId = Invoice@InvoiceId,",
+                "          Original_InvoiceID,",
+                "          InvoiceEventType,",
+                "          EventDate,",
+                "          EventDescription,",
+                "          EventReason",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "filter1, Invoice join(Original_InvoiceID == OriginalInvoiceID,",
+                "     joinType:'left',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'EnterpriseTaxModel',",
+                "     tableName: 'InvoiceEvent') ~> InvoiceEventDB"
+            ]
+        }
+    }
+}

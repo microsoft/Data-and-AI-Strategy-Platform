@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "storageAccountType": {
+        "value": "Standard_ZRS"
+      },
+      "accessTier": {
+        "value": "Hot"
+      },
+      "isHnsEnabled": {
+        "value": false
+      },
+      "requireInfrastructureEncryption": {
+        "value": true
+      },
+      "softDeleteEnabled": {
+        "value": false
+      },
+      "autoDeletePolicy": {
+        "value": false
+      },
+      "DataLakeContainerNames": {
+        "value": [
+          "azure-webjobs-hosts",
+          "azure-webjobs-secrets"
+        ]
+      },
+      "deployblobPE": {
+        "value": true
+      },
+      "deploydfsPE": {
+        "value": false
+      },
+      "deployfilePE": {
+        "value": true
+      },
+      "deployqueuePE": {
+        "value": true
+      },
+      "deploytablePE": {
+        "value": true
+      },
+      "addPurviewAsBlobReader": {
+        "value": false
+      }
+    }
+  }

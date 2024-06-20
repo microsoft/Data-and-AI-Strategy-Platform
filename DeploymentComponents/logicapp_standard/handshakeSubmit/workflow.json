@@ -1,0 +1,173 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Base_ADF_URL_for_API_Calls": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "BaseADFApiURL",
+                            "type": "string",
+                            "value": "https://management.azure.com/subscriptions/INSERTSUBID/resourceGroups/INSERTRGNAME/providers/Microsoft.DataFactory/factories/INSERTADFNAME/triggers/"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Execute_stored_procedure": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_InsertHandshake",
+                        "storedProcedureParameters": {
+                            "jsondata": "@{variables('jsondata')}"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql-3",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_variable": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "If_New_ADF_Trigger_Required": {
+                "actions": {
+                    "Create_Trigger": {
+                        "inputs": {
+                            "authentication": {
+                                "audience": "https://management.azure.com/",
+                                "type": "ManagedServiceIdentity"
+                            },
+                            "body": {
+                                "properties": {
+                                    "annotations": [],
+                                    "pipelines": [
+                                        {
+                                            "parameters": {
+                                                "TriggerNameOverride": "N/A"
+                                            },
+                                            "pipelineReference": {
+                                                "referenceName": "PL_1_Source_to_Landing_Step1",
+                                                "type": "PipelineReference"
+                                            }
+                                        }
+                                    ],
+                                    "runtimeState": "Stopped",
+                                    "type": "ScheduleTrigger",
+                                    "typeProperties": {
+                                        "recurrence": {
+                                            "frequency": "@{triggerBody()[0].IngestionSchedule[0].IngesionScheduleFrequencyRecurrenceValue\r\n}",
+                                            "interval": "@triggerBody()[0].IngestionSchedule[0].IngestionScheduleFrequencyRecurrence",
+                                            "startTime": "@{concat(parseDateTime(concat(triggerBody()[0].IngestionSchedule[0].IngestionScheduleStartDate, ' ', triggerBody()[0].IngestionSchedule[0].IngestionScheduleStartTime), 'en-us'),'Z')}",
+                                            "timeZone": "UTC"
+                                        }
+                                    }
+                                }
+                            },
+                            "method": "PUT",
+                            "uri": "@concat(variables('BaseADFApiURL'),triggerBody()[0].IngestionSchedule[0].IngestionSceheduleTriggerName,'?api-version=2018-06-01')"
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        },
+                        "type": "Http"
+                    },
+                    "If_Trigger_Should_Be_Started_Immediately": {
+                        "actions": {
+                            "Start_Trigger": {
+                                "inputs": {
+                                    "authentication": {
+                                        "audience": "https://management.azure.com/",
+                                        "type": "ManagedServiceIdentity"
+                                    },
+                                    "method": "POST",
+                                    "uri": "@concat(variables('BaseADFApiURL'),triggerBody()[0].IngestionSchedule[0].IngestionSceheduleTriggerName,'/start?api-version=2018-06-01')"
+                                },
+                                "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                        "transferMode": "Chunked"
+                                    }
+                                },
+                                "type": "Http"
+                            }
+                        },
+                        "else": {
+                            "actions": {}
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@triggerBody()[0].IngestionSchedule[0].IngestionScheduleRunOnSubmit",
+                                        "@bool('true')"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {
+                            "Create_Trigger": [
+                                "SUCCEEDED"
+                            ]
+                        },
+                        "type": "If"
+                    }
+                },
+                "else": {
+                    "actions": {}
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@triggerBody()[0].IngestionSchedule[0].IngestionSchedule",
+                                "@bool(true)"
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Base_ADF_URL_for_API_Calls": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "If"
+            },
+            "Initialize_variable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "jsondata",
+                            "type": "string",
+                            "value": "@{triggerBody()[0]}"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

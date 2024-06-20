@@ -1,0 +1,26 @@
+{
+	"name": "relationship-yijxhqnvub",
+	"properties": {
+		"Name": "relationship-yijxhqnvub",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "AttributeDefinition",
+		"ToTableName": "EntitySummary",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "AttributeID",
+				"ToColumnName": "AttributeID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "3dc8e38f-f8e4-44ff-8641-41935c1b4f11"
+	},
+	"type": "RELATIONSHIP"
+}

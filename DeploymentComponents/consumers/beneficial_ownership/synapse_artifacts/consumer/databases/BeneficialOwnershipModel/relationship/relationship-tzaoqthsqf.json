@@ -1,0 +1,26 @@
+{
+	"name": "relationship-tzaoqthsqf",
+	"properties": {
+		"Name": "relationship-tzaoqthsqf",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "RedFlagDefinition",
+		"ToTableName": "EntityRedFlag",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "FlagID",
+				"ToColumnName": "FlagID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 3,
+		"ObjectId": "3dbf94c9-e92b-482e-89b4-1eb9182647f8"
+	},
+	"type": "RELATIONSHIP"
+}

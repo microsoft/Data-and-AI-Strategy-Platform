@@ -1,0 +1,26 @@
+{
+	"name": "relationship-suonpjbmxj",
+	"properties": {
+		"Name": "relationship-suonpjbmxj",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "AttributeDefinition",
+		"ToTableName": "Activity",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "AttributeID",
+				"ToColumnName": "AttributeID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "722ee232-6cf2-489f-a7a9-3af617bee152"
+	},
+	"type": "RELATIONSHIP"
+}

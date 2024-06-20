@@ -1,0 +1,29 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "synapseWorkspaceName": {
+      "value": "synapse-dev-test"
+    },
+    "exampleInt": {
+      "value": 4
+    },
+    "exampleBool": {
+      "value": true
+    },
+    "exampleArray": {
+      "value": [
+        "value 1",
+        "value 2"
+      ]
+    },
+    "exampleObject": {
+      "value": {
+        "property1": "value1",
+        "property2": "value2"
+      }
+    }
+  }
+}

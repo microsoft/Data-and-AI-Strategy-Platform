@@ -1,0 +1,26 @@
+{    
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "PL_1_Source_to_Landing_Step1",
+                    "type": "PipelineReference"
+                },
+                "parameters": {
+                    "TriggerNameOverride": "N/A"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Minute",
+                "interval": 15,
+                "startTime": "2023-10-10T16:08:00",
+                "timeZone": "Central Standard Time"
+            }
+        }
+    }
+}

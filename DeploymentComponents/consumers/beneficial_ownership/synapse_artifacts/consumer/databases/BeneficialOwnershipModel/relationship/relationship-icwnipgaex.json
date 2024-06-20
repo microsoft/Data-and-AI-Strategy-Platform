@@ -1,0 +1,26 @@
+{
+	"name": "relationship-icwnipgaex",
+	"properties": {
+		"Name": "relationship-icwnipgaex",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "Activity",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "00a1b573-9bf5-4e80-9f78-49863622e4a7"
+	},
+	"type": "RELATIONSHIP"
+}

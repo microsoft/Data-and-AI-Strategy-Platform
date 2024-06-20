@@ -1,0 +1,64 @@
+{
+    "name": "df_CountryTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "Countries"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "CountryTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          Country as string,",
+                "          {VAT Gap} as long,",
+                "          VAT as long,",
+                "          {VAT Target} as long",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> Countries",
+                "Countries sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'CountryValues',",
+                "     mapColumn(",
+                "          Country,",
+                "          VATGap = {VAT Gap},",
+                "          VAT,",
+                "          VATTarget = {VAT Target}",
+                "     )) ~> CountryTAXModel"
+            ]
+        }
+    }
+}

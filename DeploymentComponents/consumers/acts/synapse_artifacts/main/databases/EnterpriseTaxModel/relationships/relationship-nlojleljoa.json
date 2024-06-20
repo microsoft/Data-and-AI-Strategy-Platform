@@ -1,0 +1,23 @@
+{
+	"name": "relationship-nlojleljoa",
+	"properties": {
+		"Name": "relationship-nlojleljoa",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "State",
+		"ToTableName": "Location",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "StateId",
+				"ToColumnName": "LocationStateId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

@@ -1,0 +1,26 @@
+{
+	"name": "relationship-efmukzfvwr",
+	"properties": {
+		"Name": "relationship-efmukzfvwr",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Location",
+		"ToTableName": "Invoice",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "LocationId",
+				"ToColumnName": "InvoiceToLocationId"
+			}
+		],
+		"RelationshipType": 0,
+		"Properties": {
+			"DerivedModelRelationshipInfo": "{\"baseRelationship\":{\"fromEntity\":\"Location.cdm.json/Location\",\"toEntity\":\"Invoice.cdm.json/Invoice\",\"joinPairs\":[{\"fromAttribute\":\"LocationId\",\"toAttribute\":\"InvoiceToLocationId\"}]}}"
+		}
+	},
+	"type": "RELATIONSHIP"
+}

@@ -1,0 +1,37 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "imageBuildComputeCluster": {
+      "value": {
+        "ClusterName": "image-build-compute-cluster",
+        "VMSize": "Standard_E2ads_v5",
+        "minNodeCount": 0,
+        "maxNodeCount": 4,
+        "mlComputerscaleSettingsIdleTimeBeforeScaleDown": "PT15M",
+        "mlComputeremoteLoginPortPublicAccess": "Disabled",
+        "mlComputevmOSType": "Linux",
+        "mlComputevmPriority": "Dedicated",
+        "disableLocalAuth": true
+      }
+    },
+    "computeClusters": {
+      "value": [
+        {
+          "id": 0,
+          "ClusterName": "small-cluster",
+          "VMSize": "Standard_E4ads_v5",
+          "minNodeCount": 0,
+          "maxNodeCount": 4,
+          "mlComputerscaleSettingsIdleTimeBeforeScaleDown": "PT15M",
+          "mlComputeremoteLoginPortPublicAccess": "Disabled",
+          "mlComputevmOSType": "Linux",
+          "mlComputevmPriority": "Dedicated",
+          "disableLocalAuth": true
+        }
+      ]
+    }
+  }
+}

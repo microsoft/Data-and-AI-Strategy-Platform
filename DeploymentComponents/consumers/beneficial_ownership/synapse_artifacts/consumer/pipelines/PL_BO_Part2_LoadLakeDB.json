@@ -1,0 +1,582 @@
+{
+    "name": "PL_BO_Part2_LoadLakeDB",
+    "properties": {
+        "activities": [
+            {
+                "name": "Attribute Definition",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "Archive Existing LakeDB Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_AttributeDefinitionBOModel",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "lake_db_name": {
+                                "value": "'@{variables('lake_db_name')}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "integrationRuntime": {
+                        "referenceName": "ManagedVnetIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "Entity ID",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "Archive Existing LakeDB Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_EntityBOModel",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "lake_db_name": {
+                                "value": "'@{variables('lake_db_name')}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "integrationRuntime": {
+                        "referenceName": "ManagedVnetIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "If Ownership - Populate Ownership",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Wait2",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(empty(pipeline().parameters.ownership_rowIDs))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Execute Ownership",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_BO_Part2b_Ownership",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "rowIDs": {
+                                        "value": "@pipeline().parameters.ownership_rowIDs",
+                                        "type": "Expression"
+                                    },
+                                    "lake_db_name": {
+                                        "value": "@variables('lake_db_name')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Wait2",
+                "type": "Wait",
+                "dependsOn": [
+                    {
+                        "activity": "Attribute Definition",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Entity ID",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "RedFlag Definition",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "waitTimeInSeconds": 1
+                }
+            },
+            {
+                "name": "If Contracting - Populate Activity",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Wait2",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(empty(pipeline().parameters.contracting_rowIDs))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Execute Activity",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_BO_Part2b_Activity",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "rowIDs": {
+                                        "value": "@pipeline().parameters.contracting_rowIDs",
+                                        "type": "Expression"
+                                    },
+                                    "lake_db_name": {
+                                        "value": "@variables('lake_db_name')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Populate Contact",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Wait2",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(empty(pipeline().parameters.contact_rowIDs))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Execute Contact",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_BO_Part2b_Contact",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "rowIDs": {
+                                        "value": "@pipeline().parameters.contact_rowIDs",
+                                        "type": "Expression"
+                                    },
+                                    "lake_db_name": {
+                                        "value": "@variables('lake_db_name')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "RedFlag Definition",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "Archive Existing LakeDB Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_RedFlagDefinitionBOModel",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "lake_db_name": {
+                                "value": "'@{variables('lake_db_name')}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "integrationRuntime": {
+                        "referenceName": "ManagedVnetIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "Populate RedFlag",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Wait2",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(empty(pipeline().parameters.redflag_rowIDs))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Execute RedFlag",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_BO_Part2b_RedFlag",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "rowIDs": {
+                                        "value": "@pipeline().parameters.redflag_rowIDs",
+                                        "type": "Expression"
+                                    },
+                                    "lake_db_name": {
+                                        "value": "@variables('lake_db_name')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "LakeDB to CSV",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "If Ownership - Populate Ownership",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "If Contracting - Populate Activity",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Populate Contact",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Populate RedFlag",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_DBtoCSV",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "contact_threshold": {
+                                "value": "'@{pipeline().parameters.contact_threshold}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "Check if Curated Folder Exists",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "DS_ADLS_Parquet_Folder",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "container": "curated",
+                            "folderPath": "BeneficialOwnershipModel"
+                        }
+                    },
+                    "fieldList": [
+                        "exists"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "ParquetReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "Archive Existing LakeDB Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check if Curated Folder Exists",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(activity('Check if Curated Folder Exists').output.exists,true)",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Archive Data",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "ParquetSource",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSReadSettings",
+                                        "recursive": true,
+                                        "wildcardFolderPath": "BeneficialOwnershipModel/*",
+                                        "wildcardFileName": "*.parquet",
+                                        "enablePartitionDiscovery": false
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetReadSettings"
+                                    }
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DS_ADLS_Parquet_Folder",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": "curated",
+                                        "folderPath": "BeneficialOwnershipModel"
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "DS_ADLS_Parquet_Folder",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": "curated",
+                                        "folderPath": {
+                                            "value": "@concat('Archive/BeneficialOwnershipModel/',utcnow())",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Delete1",
+                            "type": "Delete",
+                            "dependsOn": [
+                                {
+                                    "activity": "Archive Data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "DS_ADLS_Parquet_Folder",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": "curated",
+                                        "folderPath": "BeneficialOwnershipModel"
+                                    }
+                                },
+                                "enableLogging": false,
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "wildcardFileName": "*",
+                                    "enablePartitionDiscovery": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "contact_threshold": {
+                "type": "string"
+            },
+            "ownership_rowIDs": {
+                "type": "array"
+            },
+            "contracting_rowIDs": {
+                "type": "array"
+            },
+            "contact_rowIDs": {
+                "type": "array"
+            },
+            "redflag_rowIDs": {
+                "type": "array"
+            }
+        },
+        "variables": {
+            "Flag_Ownership": {
+                "type": "String"
+            },
+            "Flag_Contracting": {
+                "type": "String"
+            },
+            "country_names": {
+                "type": "String"
+            },
+            "country_name_alternatives": {
+                "type": "String"
+            },
+            "lake_db_name": {
+                "type": "String",
+                "defaultValue": "BeneficialOwnershipModel"
+            },
+            "contact_threshold": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "BeneficialOwnership"
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-06-14T20:09:13Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

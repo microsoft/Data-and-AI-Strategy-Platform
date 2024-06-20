@@ -1,0 +1,108 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "USE @{triggerBody()?['databasename']};\n\nSELECT *\nFROM INFORMATION_SCHEMA.COLUMNS\nWHERE [TABLE_SCHEMA] = 'dbo'"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql-2",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Select')",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "CHARACTER_MAXIMUM_LENGTH": {},
+                                "COLUMN_DEFAULT": {},
+                                "COLUMN_NAME": {
+                                    "type": "string"
+                                },
+                                "DATA_TYPE": {
+                                    "type": "string"
+                                },
+                                "IS_NULLABLE": {
+                                    "type": "string"
+                                },
+                                "ORDINAL_POSITION": {
+                                    "type": "integer"
+                                },
+                                "TABLE_CATALOG": {
+                                    "type": "string"
+                                },
+                                "TABLE_NAME": {
+                                    "type": "string"
+                                },
+                                "TABLE_SCHEMA": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Select": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "Select": {
+                "inputs": {
+                    "from": "@body('Execute_query')[0]",
+                    "select": {
+                        "CHARACTER_MAXIMUM_LENGTH": "@item()?['CHARACTER_MAXIMUM_LENGTH']",
+                        "COLUMN_DEFAULT": "@item()?['COLUMN_DEFAULT']",
+                        "COLUMN_NAME": "@item()?['COLUMN_NAME']",
+                        "DATA_TYPE": "@item()?['DATA_TYPE']",
+                        "IS_NULLABLE": "@item()?['IS_NULLABLE']",
+                        "ORDINAL_POSITION": "@item()?['ORDINAL_POSITION']",
+                        "TABLE_CATALOG": "@item()?['TABLE_CATALOG']",
+                        "TABLE_NAME": "@item()?['TABLE_NAME']",
+                        "TABLE_SCHEMA": "@item()?['TABLE_SCHEMA']"
+                    }
+                },
+                "runAfter": {
+                    "Execute_query": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Select"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "databasename": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

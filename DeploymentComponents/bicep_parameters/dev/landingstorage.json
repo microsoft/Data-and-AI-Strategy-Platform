@@ -1,0 +1,50 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountType": {
+      "value": "Standard_ZRS"
+    },
+    "accessTier": {
+      "value": "Hot"
+    },
+    "isHnsEnabled": {
+      "value": true
+    },
+    "requireInfrastructureEncryption": {
+      "value": true
+    },
+    "softDeleteEnabled": {
+      "value": true
+    },
+    "autoDeletePolicy": {
+      "value": true
+    },
+    "DataLakeContainerNames": {
+      "value": [
+        "landing",
+        "schema"
+      ]
+    },
+    "deployblobPE": {
+      "value": true
+    },
+    "deploydfsPE": {
+      "value": true
+    },
+    "deployfilePE": {
+      "value": true
+    },
+    "deployqueuePE": {
+      "value": false
+    },
+    "deploytablePE": {
+      "value": false
+    },
+    "enableDiagnostics": {
+      "value": true
+    }
+  }
+}

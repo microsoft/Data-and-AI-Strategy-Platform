@@ -1,0 +1,26 @@
+{
+	"name": "relationship-kluajtwona",
+	"properties": {
+		"Name": "relationship-kluajtwona",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "Activity",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "a3538a5b-ac57-4fe5-bd8e-fcf88a71d663"
+	},
+	"type": "RELATIONSHIP"
+}

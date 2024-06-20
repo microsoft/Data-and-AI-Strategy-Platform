@@ -1,0 +1,161 @@
+{
+    "name": "df_InvoiceLine_fromStaging",
+    "properties": {
+        "folder": {
+            "name": "df_LakeDBLoad/OperationalMapped"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "InvoiceLine"
+                },
+                {
+                    "name": "Invoice"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "InvoiceLineDB"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "join1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          InvoiceId as string,",
+                "          OriginalInvoiceID as string,",
+                "          InvoiceLineNumber as string,",
+                "          ReportingMonth as string,",
+                "          originalTaxPayerID as string,",
+                "          Quantity as string,",
+                "          UnitPriceAmount as string,",
+                "          SalesPriceAmount as string,",
+                "          InvoiceLineItemNote as string,",
+                "          ProductId as string,",
+                "          ItemSku as string,",
+                "          TotalProductInvoiceAmount as string,",
+                "          ChargeId as string,",
+                "          InvoiceLineChargeAmount as string,",
+                "          InvoiceLineAdjustmentsAmount as string,",
+                "          OrderId as string,",
+                "          OrderLineNumber as string,",
+                "          IsoCurrencyCode as string,",
+                "          InvoiceLineTypeId as string,",
+                "          InvoiceLineProductDescription as string,",
+                "          StandardProductCode as string,",
+                "          StandardProductDescription as string,",
+                "          TaxTypeCode as string,",
+                "          InvoiceLineUnitOfMeasure as string,",
+                "          InvoiceLineTaxRate as string,",
+                "          TotalInvoiceLineTaxesAmount as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['EnterpriseTaxModel/InvoiceLine/*']) ~> InvoiceLine",
+                "source(output(",
+                "          InvoiceId as string,",
+                "          OriginalInvoiceID as string,",
+                "          CustomerAccountId as long,",
+                "          TaxPayerId as string,",
+                "          originalTaxPayerID as string,",
+                "          InvoiceDate as date,",
+                "          InvoiceToName as string,",
+                "          InvoiceToPartyId as long,",
+                "          InvoiceSoldToState as string,",
+                "          InvoiceSoldToSector as string,",
+                "          InvoiceToLocationId as integer,",
+                "          InvoiceToTelephoneNumber as decimal(15,0),",
+                "          InvoiceToFaxNumber as decimal(15,0),",
+                "          InvoiceToEmailAddress as string,",
+                "          InvoiceNote as string,",
+                "          TotalInvoiceProductAmount as decimal(18,2),",
+                "          TotalInvoiceChargesAmount as decimal(18,2),",
+                "          TotalInvoiceAdjustmentsAmount as decimal(18,2),",
+                "          TotalInvoiceTaxesAmount as decimal(18,2),",
+                "          TotalInvoiceAmount as decimal(18,2),",
+                "          OrderId as long,",
+                "          InvoiceModeId as integer,",
+                "          IsoCurrencyCode as string,",
+                "          InvoiceStatusId as integer,",
+                "          IsoLanguageId as integer,",
+                "          InvoiceSeriesNumber as string,",
+                "          InvoiceLatestEvent as string,",
+                "          InvoiceLatestEventDate as string,",
+                "          InvoiceDestination as string,",
+                "          InvoiceFinalConsumer as string,",
+                "          InvoiceStateTaxpayer as string,",
+                "          InvoiceBuyerPresent as string,",
+                "          InvoiceNumber as string,",
+                "          Year as integer",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'EnterpriseTaxModel',",
+                "     tableName: 'Invoice') ~> Invoice",
+                "InvoiceLine filter(not(isNull(OriginalInvoiceID))) ~> filter1",
+                "join1 select(mapColumn(",
+                "          InvoiceId = Invoice@InvoiceId,",
+                "          OriginalInvoiceID = InvoiceLine@OriginalInvoiceID,",
+                "          InvoiceLineNumber,",
+                "          ReportingMonth,",
+                "          originalTaxPayerID,",
+                "          Quantity,",
+                "          UnitPriceAmount,",
+                "          SalesPriceAmount,",
+                "          InvoiceLineItemNote,",
+                "          ProductId,",
+                "          ItemSku,",
+                "          TotalProductInvoiceAmount,",
+                "          ChargeId,",
+                "          InvoiceLineChargeAmount,",
+                "          InvoiceLineAdjustmentsAmount,",
+                "          OrderId = InvoiceLine@OrderId,",
+                "          OrderLineNumber,",
+                "          IsoCurrencyCode = InvoiceLine@IsoCurrencyCode,",
+                "          InvoiceLineTypeId,",
+                "          InvoiceLineProductDescription,",
+                "          StandardProductCode,",
+                "          StandardProductDescription,",
+                "          TaxTypeCode,",
+                "          InvoiceLineUnitOfMeasure,",
+                "          InvoiceLineTaxRate,",
+                "          TotalInvoiceLineTaxesAmount",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "filter1, Invoice join(InvoiceLine@OriginalInvoiceID == Invoice@OriginalInvoiceID,",
+                "     joinType:'left',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'EnterpriseTaxModel',",
+                "     tableName: 'InvoiceLine') ~> InvoiceLineDB"
+            ]
+        }
+    }
+}

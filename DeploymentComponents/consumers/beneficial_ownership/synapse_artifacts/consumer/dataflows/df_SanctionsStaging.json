@@ -1,0 +1,85 @@
+{
+	"name": "df_SanctionsStaging",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Staging"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          caption as string,",
+				"          datasets as string[],",
+				"          first_seen as string,",
+				"          id as string,",
+				"          last_seen as string,",
+				"          properties as (address as string[], addressEntity as string[], agent as string[], alias as string[], amount as string[], amountUsd as string[], asset as string[], associate as string[], authority as string[], authorityId as string[], balance as string[], bikCode as string[], birthDate as string[], birthPlace as string[], buildDate as string[], callSign as string[], city as string[], classification as string[], client as string[], country as string[], createdAt as date[], currency as string[], date as string[], deathDate as string[], description as string[], director as string[], dissolutionDate as string[], dunsCode as string[], duration as string[], education as string[], email as string[], employee as string[], employer as string[], endDate as string[], entity as string[], ethnicity as string[], fatherName as string[], firstName as string[], flag as string[], full as string[], gender as string[], grossRegisteredTonnage as string[], holder as string[], icijId as string[], idNumber as string[], imoNumber as string[], incorporationDate as string[], innCode as string[], isin as string[], issueDate as string[], issuer as string[], jurisdiction as string[], keywords as string[], kppCode as string[], lastName as string[], legalForm as string[], leiCode as string[], listingDate as string[], maturityDate as string[], member as string[], middleName as string[], mmsi as string[], model as string[], modifiedAt as string[], motherName as string[], name as string[], nationality as string[], notes as string[], number as string[], object as string[], ogrnCode as string[], okpoCode as string[], opencorporatesUrl as string[], organization as string[], owner as string[], passportNumber as string[], pastFlags as string[], percentage as string[], person as string[], phone as string[], position as string[], postOfficeBox as string[], postalCode as string[], previousName as string[], program as string[], provisions as string[], publicKey as string[], publisher as string[], reason as string[], recordId as string[], region as string[], registrationNumber as string[], relationship as string[], relative as string[], religion as string[], remarks as string[], role as string[], secondName as string[], sector as string[], serialNumber as string[], sharesCount as string[], sharesValue as string[], sourceUrl as string[], startDate as string[], state as string[], status as string[], street as string[], subject as string[], summary as string[], swiftBic as string[], taxNumber as string[], ticker as string[], title as string[], tonnage as string[], topics as string[], type as string[], unscId as string[], vatCode as string[], weakAlias as string[], website as string[], wikidataId as string[]),",
+				"          referents as string[],",
+				"          schema as string,",
+				"          target as boolean",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'json',",
+				"     fileSystem: 'raw',",
+				"     documentForm: 'documentPerLine',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Sanctions/AllData/v1/full/*/*/*/*']) ~> source1",
+				"source1 derive(id = id,",
+				"          schema = schema,",
+				"          properties = toString(properties),",
+				"          program = toString(properties.program)) ~> derivedColumn1",
+				"derivedColumn1 select(mapColumn(",
+				"          id,",
+				"          schema,",
+				"          properties,",
+				"          program",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 filter(schema =='Sanction') ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: 'BeneficialOwnership/OpenData/Sanctions/Flattened',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

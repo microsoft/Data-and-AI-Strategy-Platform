@@ -1,0 +1,19 @@
+{
+	"name": "XmlRaw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorageRaw",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Xml",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "XML",
+				"container": "raw"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

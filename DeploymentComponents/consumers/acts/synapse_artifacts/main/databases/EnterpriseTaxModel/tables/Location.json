@@ -1,0 +1,425 @@
+{
+	"name": "Location",
+	"properties": {
+		"Name": "Location",
+		"EntityType": "TABLE",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Description": "A location is a physical point that can be defined as a single latitude / longitude. A location can be used to describe:\n\n- the address of a physical structure\n- the location of a business or service\n- the location of a component\n- the delivery location for a shipment or mail",
+		"TableType": "EXTERNAL",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"StorageDescriptor": {
+			"Columns": [
+				{
+					"Name": "LocationId",
+					"Description": "The unique identifier of a Location.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "OriginalLocationID",
+					"Description": "The unique identifier of a Location from source",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsNullable": true,
+						"IsComplexType": false,
+						"Length": 256,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationName",
+					"Description": "The name of a location.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationName"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationDescription",
+					"Description": "The description of a location.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 512,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationDescription"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationAddressLine1",
+					"Description": "The 'street' component of a location. Includes street name, apartment, suite number or PO Box.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 512,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationAddressLine1"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationAddressLine2",
+					"Description": "The 'street' component of a location. Includes street name, apartment, suite number or PO Box.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 512,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationAddressLine2"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationCity",
+					"Description": "The 'city' component of a location.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationCity"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationStateId",
+					"Description": "The unique identifier of the State = State Code.\n\nA two-digit FIPS code assigned by the NIST to identify each State and statistically equivalent entity. The NIST assigns the codes based on the alphabetic sequence of State names (Puerto Rico and the Outlying Areas appear at the end); it documents these codes in a FIPS publication (FIPS PUB 5). Also, a two-digit code assigned by the Census Bureau to identify each State within its census geographic division (Puerto Rico and the Outlying Areas appear at the end).",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationStateId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationStateName",
+					"Description": "",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 256,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationZipCode",
+					"Description": "The unique identifier of a Zip Code.",
+					"OriginDataTypeName": {
+						"TypeName": "decimal",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Precision": 11,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "decimal"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationZipCode"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationNote",
+					"Description": "Notes, comments or additional information about the location. The note could be used to describe access to the location as well as any hazardous conditions that might exist at the location.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 1024,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationNote"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationLatitude",
+					"Description": "The location north or south in reference to the equator, which is designated at zero (0) degrees. Parallel lines that circle the globe both north and south of the equator. \n\nLatitude is often measured in degrees, minutes, seconds (ddd mm ss), but other formats are also commonly used: gps coordinate (ddd mm.mmmm), decimal degrees (ddd.dddd).",
+					"OriginDataTypeName": {
+						"TypeName": "decimal",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Precision": 7,
+						"Scale": 4,
+						"Properties": {
+							"HIVE_TYPE_STRING": "decimal"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationLatitude"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationLongitude",
+					"Description": "The location east or west in reference to the Prime Meridian, which is designated as zero (0) degrees longitude. The distance between lines of longitude are greater at the equator and smaller at the higher latitudes, intersecting at the earth's North and South Poles. Time zones are correlated to longitude.\n\nLongitude is often measured in degrees, minutes, seconds (ddd mm ss), but other formats are also commonly used: gps coordinate (ddd mm.mmmm), decimal degrees (ddd.dddd).",
+					"OriginDataTypeName": {
+						"TypeName": "decimal",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Precision": 7,
+						"Scale": 4,
+						"Properties": {
+							"HIVE_TYPE_STRING": "decimal"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationLongitude"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationDatum",
+					"Description": "Latitude and longitude are based on a datum.  A datum is a reference point, surface or axis against which measurements are made.\n\nDifferent datums can be used for determining the latitude and longitude. If different datums are used the latitude and longitude for a single point (location) may be different.\n\nWGS 84 is a datum that is used on most GPS equipment.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 5,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationDatum"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationElevation",
+					"Description": "The distance above sea level of this location at ground level.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationElevation"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "LocationElevationUnitOfMeasureId",
+					"Description": "The elevation unit of measurement.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "LocationElevationUnitOfMeasureId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "GlobalLocationNumber",
+					"Description": "The Global Location Number (GLN) is a simple tool used to uniquely identify locations. It can be used to identify physical locations such as a warehouse, legal entities, or a function / department within a legal entity. The GLN is part of the GS1 system of standards.",
+					"OriginDataTypeName": {
+						"TypeName": "decimal",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Precision": 13,
+						"Scale": 0,
+						"Properties": {
+							"HIVE_TYPE_STRING": "decimal"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "GlobalLocationNumber"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "TimezoneId",
+					"Description": "The unique identifier of a timezone.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "TimezoneId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "DaylightSavingsTimeObservedIndicator",
+					"Description": "Indicates whether daylight savings time (DST) is observed at this location.",
+					"OriginDataTypeName": {
+						"TypeName": "boolean",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "boolean"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "DaylightSavingsTimeObservedIndicator"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "CountryId",
+					"Description": "The unique identifier of the Country.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "CountryId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "SubdivisionId",
+					"Description": "The unique identifier of the Country Subdivision.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsNullable": true,
+						"IsComplexType": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "Location.cdm.json/Location",
+						"Name": "SubdivisionId"
+					},
+					"DeltaFormatInvalidMessages": []
+				}
+			],
+			"Format": {
+				"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+				"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+				"FormatType": "parquet",
+				"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+				"Properties": {
+					"path": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/Location",
+					"FormatTypeSetToDatabaseDefault": true
+				}
+			},
+			"Source": {
+				"Provider": "ADLS",
+				"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/Location",
+				"Properties": {
+					"LinkedServiceName": "LS_DataLake",
+					"LocationSetToDatabaseDefault": true
+				}
+			},
+			"Properties": {
+				"textinputformat.record.delimiter": ",",
+				"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+				"derivedModelAttributeInfo": "{\"attributeReferences\":{\"LocationId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationId\"},\"LocationName\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationName\"},\"LocationDescription\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationDescription\"},\"LocationAddressLine1\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationAddressLine1\"},\"LocationAddressLine2\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationAddressLine2\"},\"LocationCity\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationCity\"},\"LocationStateId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationStateId\"},\"LocationZipCode\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationZipCode\"},\"LocationNote\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationNote\"},\"LocationLatitude\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationLatitude\"},\"LocationLongitude\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationLongitude\"},\"LocationDatum\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationDatum\"},\"LocationElevation\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationElevation\"},\"LocationElevationUnitOfMeasureId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationElevationUnitOfMeasureId\"},\"GlobalLocationNumber\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"GlobalLocationNumber\"},\"TimezoneId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"TimezoneId\"},\"DaylightSavingsTimeObservedIndicator\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"DaylightSavingsTimeObservedIndicator\"},\"CountryId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"CountryId\"},\"SubdivisionId\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"SubdivisionId\"}}}"
+			},
+			"Compressed": false,
+			"IsStoredAsSubdirectories": false
+		},
+		"Properties": {
+			"DerivedModelEntityInfo": "{\"entityDirectives\":{\"name\":\"Location\",\"description\":\"A location is a physical point that can be defined as a single latitude / longitude. A location can be used to describe:\\n\\n- the address of a physical structure\\n- the location of a business or service\\n- the location of a component\\n- the delivery location for a shipment or mail\",\"baseEntityReference\":{\"name\":\"Location\",\"path\":\"Location.cdm.json/Location\"},\"primaryKey\":[\"LocationId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a Location.\",\"isNullable\":false,\"name\":\"LocationId\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":256,\"description\":\"The unique identifier of a Location from source\",\"isNullable\":true,\"name\":\"OriginalLocationID\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of a location.\",\"isNullable\":true,\"name\":\"LocationName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationDescription\"},\"dataType\":\"string\",\"dataTypeLength\":512,\"description\":\"The description of a location.\",\"isNullable\":true,\"name\":\"LocationDescription\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationAddressLine1\"},\"dataType\":\"string\",\"dataTypeLength\":512,\"description\":\"The 'street' component of a location. Includes street name, apartment, suite number or PO Box.\",\"isNullable\":true,\"name\":\"LocationAddressLine1\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationAddressLine2\"},\"dataType\":\"string\",\"dataTypeLength\":512,\"description\":\"The 'street' component of a location. Includes street name, apartment, suite number or PO Box.\",\"isNullable\":true,\"name\":\"LocationAddressLine2\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationCity\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The 'city' component of a location.\",\"isNullable\":true,\"name\":\"LocationCity\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationStateId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of the State = State Code.\\n\\nA two-digit FIPS code assigned by the NIST to identify each State and statistically equivalent entity. The NIST assigns the codes based on the alphabetic sequence of State names (Puerto Rico and the Outlying Areas appear at the end); it documents these codes in a FIPS publication (FIPS PUB 5). Also, a two-digit code assigned by the Census Bureau to identify each State within its census geographic division (Puerto Rico and the Outlying Areas appear at the end).\",\"isNullable\":true,\"name\":\"LocationStateId\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":256,\"description\":\"\",\"isNullable\":true,\"name\":\"LocationStateName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationZipCode\"},\"dataType\":\"decimal\",\"dataTypeLength\":11,\"description\":\"The unique identifier of a Zip Code.\",\"isNullable\":true,\"scale\":0,\"name\":\"LocationZipCode\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationNote\"},\"dataType\":\"string\",\"dataTypeLength\":1024,\"description\":\"Notes, comments or additional information about the location. The note could be used to describe access to the location as well as any hazardous conditions that might exist at the location.\",\"isNullable\":true,\"name\":\"LocationNote\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationLatitude\"},\"dataType\":\"decimal\",\"dataTypeLength\":7,\"description\":\"The location north or south in reference to the equator, which is designated at zero (0) degrees. Parallel lines that circle the globe both north and south of the equator. \\n\\nLatitude is often measured in degrees, minutes, seconds (ddd mm ss), but other formats are also commonly used: gps coordinate (ddd mm.mmmm), decimal degrees (ddd.dddd).\",\"isNullable\":true,\"scale\":4,\"name\":\"LocationLatitude\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationLongitude\"},\"dataType\":\"decimal\",\"dataTypeLength\":7,\"description\":\"The location east or west in reference to the Prime Meridian, which is designated as zero (0) degrees longitude. The distance between lines of longitude are greater at the equator and smaller at the higher latitudes, intersecting at the earth's North and South Poles. Time zones are correlated to longitude.\\n\\nLongitude is often measured in degrees, minutes, seconds (ddd mm ss), but other formats are also commonly used: gps coordinate (ddd mm.mmmm), decimal degrees (ddd.dddd).\",\"isNullable\":true,\"scale\":4,\"name\":\"LocationLongitude\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationDatum\"},\"dataType\":\"string\",\"dataTypeLength\":5,\"description\":\"Latitude and longitude are based on a datum.  A datum is a reference point, surface or axis against which measurements are made.\\n\\nDifferent datums can be used for determining the latitude and longitude. If different datums are used the latitude and longitude for a single point (location) may be different.\\n\\nWGS 84 is a datum that is used on most GPS equipment.\",\"isNullable\":true,\"name\":\"LocationDatum\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationElevation\"},\"dataType\":\"integer\",\"description\":\"The distance above sea level of this location at ground level.\",\"isNullable\":true,\"name\":\"LocationElevation\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"LocationElevationUnitOfMeasureId\"},\"dataType\":\"integer\",\"description\":\"The elevation unit of measurement.\",\"isNullable\":true,\"name\":\"LocationElevationUnitOfMeasureId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"GlobalLocationNumber\"},\"dataType\":\"decimal\",\"dataTypeLength\":13,\"description\":\"The Global Location Number (GLN) is a simple tool used to uniquely identify locations. It can be used to identify physical locations such as a warehouse, legal entities, or a function / department within a legal entity. The GLN is part of the GS1 system of standards.\",\"isNullable\":true,\"scale\":0,\"name\":\"GlobalLocationNumber\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"TimezoneId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a timezone.\",\"isNullable\":true,\"name\":\"TimezoneId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"DaylightSavingsTimeObservedIndicator\"},\"dataType\":\"boolean\",\"description\":\"Indicates whether daylight savings time (DST) is observed at this location.\",\"isNullable\":true,\"name\":\"DaylightSavingsTimeObservedIndicator\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"CountryId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of the Country.\",\"isNullable\":true,\"name\":\"CountryId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"Location.cdm.json/Location\",\"name\":\"SubdivisionId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of the Country Subdivision.\",\"isNullable\":true,\"name\":\"SubdivisionId\"}]}}}",
+			"Description": "A location is a physical point that can be defined as a single latitude / longitude. A location can be used to describe:\n\n- the address of a physical structure\n- the location of a business or service\n- the location of a component\n- the delivery location for a shipment or mail",
+			"DisplayFolderInfo": "{\"name\":\"Geography\",\"colorCode\":\"#630454\"}",
+			"PrimaryKeys": "LocationId",
+			"spark.sql.sources.provider": "parquet"
+		},
+		"Retention": 0,
+		"Temporary": false,
+		"IsRewriteEnabled": false,
+		"Partitioning": {
+			"PartitionFunctionType": null,
+			"Keys": null
+		}
+	},
+	"type": "TABLE"
+}

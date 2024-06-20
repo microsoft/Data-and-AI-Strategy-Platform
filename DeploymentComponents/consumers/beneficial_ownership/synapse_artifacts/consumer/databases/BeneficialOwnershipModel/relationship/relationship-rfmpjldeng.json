@@ -1,0 +1,26 @@
+{
+	"name": "relationship-rfmpjldeng",
+	"properties": {
+		"Name": "relationship-rfmpjldeng",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "AttributeDefinition",
+		"ToTableName": "Activity",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "AttributeID",
+				"ToColumnName": "AttributeID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "bf614748-df97-409b-8ec0-58407ef9675e"
+	},
+	"type": "RELATIONSHIP"
+}

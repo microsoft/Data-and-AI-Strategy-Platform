@@ -1,0 +1,146 @@
+{
+	"name": "joinCorporateOwnership",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation/df_testing"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "corporate",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				},
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Parquet_sink",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          company_number as integer,",
+				"          jurisdiction_code as string,",
+				"          name as string,",
+				"          normalised_name as string,",
+				"          company_type as string,",
+				"          nonprofit as boolean,",
+				"          current_status as string,",
+				"          incorporation_date as string,",
+				"          dissolution_date as string,",
+				"          branch as string,",
+				"          business_number as string,",
+				"          current_alternative_legal_name as string,",
+				"          current_alternative_legal_name_language as string,",
+				"          home_jurisdiction_text as string,",
+				"          native_company_number as string,",
+				"          previous_names as string,",
+				"          retrieved_at as string,",
+				"          registry_url as string,",
+				"          restricted_for_marketing as string,",
+				"          inactive as boolean,",
+				"          accounts_next_due as string,",
+				"          accounts_reference_date as string,",
+				"          accounts_last_made_up_date as string,",
+				"          annual_return_next_due as string,",
+				"          annual_return_last_made_up_date as string,",
+				"          has_been_liquidated as string,",
+				"          has_insolvency_history as string,",
+				"          has_charges as string,",
+				"          number_of_employees as string,",
+				"          {registered_address.street_address} as string,",
+				"          {registered_address.locality} as string,",
+				"          {registered_address.region} as string,",
+				"          {registered_address.postal_code} as string,",
+				"          {registered_address.country} as string,",
+				"          {registered_address.in_full} as string,",
+				"          home_jurisdiction_code as string,",
+				"          home_jurisdiction_company_number as string,",
+				"          industry_code_uids as string,",
+				"          latest_accounts_date as string,",
+				"          latest_accounts_cash as string,",
+				"          latest_accounts_assets as string,",
+				"          latest_accounts_liabilities as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source(output(",
+				"          statement_id as string,",
+				"          statement_type as string,",
+				"          entity_name as string,",
+				"          addresses_address as string,",
+				"          addresses_country as string,",
+				"          addresses_type as string,",
+				"          identifiers_id as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Entity/Flattened/*']) ~> source2",
+				"select1 derive(awards_supplier_name = regexReplace(lower(normalised_name), \"[\\\"\\'*()-:;]\", \"\")) ~> derivedColumn1",
+				"source1 select(mapColumn(",
+				"          normalised_name,",
+				"          company_number,",
+				"          {registered_address.in_full}",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"source2 select(mapColumn(",
+				"          entity_name,",
+				"          addresses_address,",
+				"          identifiers_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 derive(entity_name = regexReplace(lower(entity_name), \"[\\\"\\'*()-:;]\", \"\")) ~> derivedColumn2",
+				"derivedColumn1, derivedColumn2 join(fuzzyCompare(normalised_name, entity_name, 80.00),",
+				"     joinType:'inner',",
+				"     matchType:'fuzzy',",
+				"     ignoreSpaces: true,",
+				"     broadcast: 'off')~> join1",
+				"join1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

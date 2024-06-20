@@ -1,0 +1,123 @@
+{
+	"name": "merge",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Mapping/test"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source2"
+				},
+				{
+					"name": "source3"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "filter2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          EntityID as string,",
+				"          AttributeID as string,",
+				"          Value as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Entity/OwnershipDF_Processed/OpenData']) ~> source1",
+				"source(output(",
+				"          id as string,",
+				"          caption as string,",
+				"          properties_name as string,",
+				"          properties_entity as string,",
+				"          properties_startDate as string,",
+				"          properties_endDate as string,",
+				"          properties_reason as string,",
+				"          properties_authority as string,",
+				"          properties_full as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Sanctions/Flattened/*']) ~> source2",
+				"source(output(",
+				"          EntityID as string,",
+				"          AttributeID as string,",
+				"          Value as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'BeneficialOwnershipModel',",
+				"     tableName: 'Contact') ~> source3",
+				"source2 derive(properties_name = lower(properties_name)) ~> derivedColumn1",
+				"source1 filter(AttributeID == \"name\") ~> filter1",
+				"filter1, derivedColumn1 join(fuzzyCompare(Value, properties_name, 71.00),",
+				"     joinType:'inner',",
+				"     matchType:'fuzzy',",
+				"     ignoreSpaces: true,",
+				"     broadcast: 'off')~> join1",
+				"filter2, source3 join(fuzzyCompare(source1@Value, source3@Value, 76.00),",
+				"     joinType:'inner',",
+				"     matchType:'fuzzy',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'off')~> join2",
+				"join1 filter(not(startsWith(Value,'?') )) ~> filter2",
+				"join2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'transparency-test',",
+				"     folderPath: 'contractingtest2',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1) ~> sink1"
+			]
+		}
+	}
+}

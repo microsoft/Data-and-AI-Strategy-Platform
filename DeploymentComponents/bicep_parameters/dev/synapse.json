@@ -1,0 +1,20 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "configureGit": {
+      "value": false
+    },
+    "gitRepositoryName": {
+      "value": "synapse-adf-repo"
+    },
+    "enableDiagnostics": {
+      "value": true
+    },
+    "enableSQLAuditLogging": {
+      "value": true
+    }
+  }
+}

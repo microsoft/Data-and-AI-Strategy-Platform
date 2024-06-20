@@ -1,0 +1,106 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_InsertPatternParameters",
+                        "storedProcedureParameters": {
+                            "jsonData": "@variables('jsonData')"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "Initialize_JSON": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "jsonData",
+                            "type": "string",
+                            "value": "@{triggerBody()}"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Active": {
+                                    "type": "string"
+                                },
+                                "Area": {
+                                    "type": "string"
+                                },
+                                "Choices": {
+                                    "type": "string"
+                                },
+                                "ColumnType": {
+                                    "type": "string"
+                                },
+                                "ColumnValue": {
+                                    "type": "string"
+                                },
+                                "DataSourceSystem": {
+                                    "type": "string"
+                                },
+                                "DataSourceType": {
+                                    "type": "string"
+                                },
+                                "Description": {
+                                    "type": "string"
+                                },
+                                "Icon": {
+                                    "type": "string"
+                                },
+                                "LabelName": {
+                                    "type": "string"
+                                },
+                                "Name": {
+                                    "type": "string"
+                                },
+                                "PatternType": {
+                                    "type": "string"
+                                },
+                                "Required": {
+                                    "type": "string"
+                                },
+                                "Screen": {
+                                    "type": "string"
+                                },
+                                "Visible": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "array"
+                        }
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

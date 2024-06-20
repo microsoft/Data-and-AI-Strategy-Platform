@@ -1,0 +1,71 @@
+{
+    "name": "df_CorruptionTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "Corruption"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "CorruptionTAXmodel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          State as string,",
+                "          Sector1 as string,",
+                "          {Month Year} as string,",
+                "          TaxpayerID as string,",
+                "          VAT as double,",
+                "          {VAT Target} as double,",
+                "          {VAT Gap} as double,",
+                "          {Anomaly Index} as short,",
+                "          {Fraud Risk Score​} as double,",
+                "          {Auditor​} as string,",
+                "          {Auditor action​} as string,",
+                "          {Auditor Supervisor​} as string,",
+                "          {Penalty charged​} as string,",
+                "          {Time to close​} as string,",
+                "          {Closing approved by​} as string,",
+                "          {Additional Penalty / Action} as string,",
+                "          {Remarks/Findings} as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> Corruption",
+                "Corruption sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'Corruption') ~> CorruptionTAXmodel"
+            ]
+        }
+    }
+}

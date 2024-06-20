@@ -1,0 +1,430 @@
+{
+    "name": "PL_1_Source_to_Landing_Step1",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Control Table Details for Source Data",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Set TriggerName",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT      *\nFROM        dbo.ControlTable\nWHERE       TopLevelPipelineName='@{pipeline().Pipeline}'\nAND         TriggerName = '@{variables('TriggerName')}'\nAND         CopyEnabled = 1",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "For Each Control Table Record",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Control Table Details for Source Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Control Table Details for Source Data').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": false,
+                    "batchCount": 4,
+                    "activities": [
+                        {
+                            "name": "Ingestion Pattern",
+                            "type": "Switch",
+                            "dependsOn": [
+                                {
+                                    "activity": "Add Logging Record for Start",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "on": {
+                                    "value": "@json(item().DataLoadingBehaviorSettings).ingestionPattern",
+                                    "type": "Expression"
+                                },
+                                "cases": [
+                                    {
+                                        "value": "Oracle",
+                                        "activities": [
+                                            {
+                                                "name": "Oracle Ingestion Pipeline",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "PL_1_Source_to_Landing_Step2_Oracle",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "tableName": {
+                                                            "value": "@json(item().SourceObjectSettings).table",
+                                                            "type": "Expression"
+                                                        },
+                                                        "schemaName": {
+                                                            "value": "@json(item().SourceObjectSettings).schema",
+                                                            "type": "Expression"
+                                                        },
+                                                        "query": {
+                                                            "value": "@json(item().SourceObjectSettings).query",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputContainer": {
+                                                            "value": "@json(item().SinkObjectSettings).container",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputFolderPath": {
+                                                            "value": "@json(item().SinkObjectSettings).folderPath",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputFileName": {
+                                                            "value": "@json(item().SinkObjectSettings).fileName",
+                                                            "type": "Expression"
+                                                        },
+                                                        "watermark_column": {
+                                                            "value": "@json(item().CopySourceSettings).watermark_column",
+                                                            "type": "Expression"
+                                                        },
+                                                        "control_table_record_id": {
+                                                            "value": "@item().id",
+                                                            "type": "Expression"
+                                                        },
+                                                        "partitioningOption": {
+                                                            "value": "@json(item().CopySourceSettings).partitioningOption",
+                                                            "type": "Expression"
+                                                        },
+                                                        "id_to_update": {
+                                                            "value": "@activity('Add Logging Record for Start').output.firstRow.logging_table_id",
+                                                            "type": "Expression"
+                                                        },
+                                                        "keyVaultSecretName": {
+                                                            "value": "@json(item().SourceConnectionSettingsName).keyVaultSecretName",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "M365",
+                                        "activities": [
+                                            {
+                                                "name": "Execute M365 Ingestion",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "PL_1_Source_to_Landing_Step2_M365",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "tableName": {
+                                                            "value": "@json(item().SourceObjectSettings).tableName",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputContainer": {
+                                                            "value": "@json(item().SinkObjectSettings).container",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputFolderPath": {
+                                                            "value": "@json(item().SinkObjectSettings).folderPath",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputColumns": {
+                                                            "value": "@json(item().CopySourceSettings).outputColumns",
+                                                            "type": "Expression"
+                                                        },
+                                                        "id_to_update": {
+                                                            "value": "@activity('Add Logging Record for Start').output.firstRow.logging_table_id",
+                                                            "type": "Expression"
+                                                        },
+                                                        "filterOnDate": {
+                                                            "value": "@json(item().SourceObjectSettings).filterOnDate",
+                                                            "type": "Expression"
+                                                        },
+                                                        "scopeFilter": {
+                                                            "value": "@json(item().SourceObjectSettings).scopeFilter",
+                                                            "type": "Expression"
+                                                        },
+                                                        "dateFilterColumn": {
+                                                            "value": "@json(item().CopySourceSettings).dateFilterColumn",
+                                                            "type": "Expression"
+                                                        },
+                                                        "startDate": {
+                                                            "value": "@json(item().CopySourceSettings).startDate",
+                                                            "type": "Expression"
+                                                        },
+                                                        "endDate": {
+                                                            "value": "@json(item().CopySourceSettings).endDate",
+                                                            "type": "Expression"
+                                                        },
+                                                        "control_table_record_id": {
+                                                            "value": "@item().id",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "AzureSQL",
+                                        "activities": [
+                                            {
+                                                "name": "SQL Ingestion Pipeline",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "PL_1_Source_to_Landing_Step2_AzureSQL",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "tableName": {
+                                                            "value": "@json(item().SourceObjectSettings).table",
+                                                            "type": "Expression"
+                                                        },
+                                                        "schemaName": {
+                                                            "value": "@json(item().SourceObjectSettings).schema",
+                                                            "type": "Expression"
+                                                        },
+                                                        "query": {
+                                                            "value": "@json(item().SourceObjectSettings).query",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputContainer": {
+                                                            "value": "@json(item().SinkObjectSettings).container",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputFolderPath": {
+                                                            "value": "@json(item().SinkObjectSettings).folderPath",
+                                                            "type": "Expression"
+                                                        },
+                                                        "outputFileName": {
+                                                            "value": "@json(item().SinkObjectSettings).fileName",
+                                                            "type": "Expression"
+                                                        },
+                                                        "watermark_column": {
+                                                            "value": "@json(item().CopySourceSettings).watermark_column",
+                                                            "type": "Expression"
+                                                        },
+                                                        "control_table_record_id": {
+                                                            "value": "@item().id",
+                                                            "type": "Expression"
+                                                        },
+                                                        "partitioningOption": {
+                                                            "value": "@json(item().CopySourceSettings).partitioningOption",
+                                                            "type": "Expression"
+                                                        },
+                                                        "id_to_update": {
+                                                            "value": "@activity('Add Logging Record for Start').output.firstRow.logging_table_id",
+                                                            "type": "Expression"
+                                                        },
+                                                        "keyVaultSecretName": {
+                                                            "value": "@json(item().SourceConnectionSettingsName).keyVaultSecretName",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "Add Logging Record for Start",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderStoredProcedureName": "[dbo].[LogDataFromSource]",
+                                    "storedProcedureParameters": {
+                                        "control_table_record_id": {
+                                            "type": "Int32",
+                                            "value": {
+                                                "value": "@item().id",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "ingestion_status": {
+                                            "type": "String",
+                                            "value": "Started"
+                                        },
+                                        "pipeline_id": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "pipeline_trigger": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().TriggerName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "source": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@string(item().SourceObjectSettings)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Add Logging Record for Failure",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Ingestion Pattern",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderStoredProcedureName": "[dbo].[LogDataFromSource]",
+                                    "storedProcedureParameters": {
+                                        "id_to_update": {
+                                            "type": "Int32",
+                                            "value": {
+                                                "value": "@activity('Add Logging Record for Start').output.firstRow.logging_table_id",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "ingestion_status": {
+                                            "type": "String",
+                                            "value": "Failed"
+                                        },
+                                        "pipeline_id": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "source": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@json(item().SourceObjectSettings).tableName",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set TriggerName",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "TriggerName",
+                    "value": {
+                        "value": "@if(equals(pipeline().parameters.TriggerNameOverride,'N/A')\n,pipeline().TriggerName, pipeline().parameters.TriggerNameOverride)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "TriggerNameOverride": {
+                "type": "string",
+                "defaultValue": "N/A"
+            }
+        },
+        "variables": {
+            "TriggerName": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "SourceToLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-22T17:57:27Z"
+    }
+}

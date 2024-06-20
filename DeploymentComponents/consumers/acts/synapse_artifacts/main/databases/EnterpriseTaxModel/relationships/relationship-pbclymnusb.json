@@ -1,0 +1,23 @@
+{
+	"name": "relationship-pbclymnusb",
+	"properties": {
+		"Name": "relationship-pbclymnusb",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Taxpayer",
+		"ToTableName": "AnomalyResults",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "TaxpayerId",
+				"ToColumnName": "CustomerID"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

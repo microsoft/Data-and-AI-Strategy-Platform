@@ -1,0 +1,90 @@
+{
+    "name": "PL_RunDataflow_Part1",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Latest Processed Record",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL\n",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Latest Processed Record').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": false,
+                    "activities": [
+                        {
+                            "name": "Execute PLRunDataflow_Part2",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_RunDataflow_Part2",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "path": {
+                                        "value": "@item().raw_folderpath",
+                                        "type": "Expression"
+                                    },
+                                    "filename": {
+                                        "value": "@item().raw_filename",
+                                        "type": "Expression"
+                                    },
+                                    "rowid": {
+                                        "value": "@item().id",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "test": {
+                "type": "Array"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-01-12T22:52:06Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

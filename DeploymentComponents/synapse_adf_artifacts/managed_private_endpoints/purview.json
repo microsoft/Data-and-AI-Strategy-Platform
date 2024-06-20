@@ -1,0 +1,7 @@
+{
+    "name": "MPE_Purview",
+    "properties": {
+        "privateLinkResourceId": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Purview/accounts/purviewName",
+        "groupId": "account"
+    }
+}

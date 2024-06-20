@@ -1,0 +1,44 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "skuCapacity": {
+        "value": 1
+      },
+      "isAutoInflateEnabled": {
+        "value": true
+      },
+      "maximumThroughputUnits": {
+        "value": 10
+      },
+      "minimumTlsVersion": {
+        "value": "1.2"
+      },
+      "kafkaEnabled": {
+        "value": true
+      },
+      "trustedServiceAccessEnabled": {
+        "value": true
+      },
+      "createEventHubsOnDeployment": {
+        "value": false
+      },
+      "eventHubs": {
+        "value": [
+          {
+            "eventHubName": "product",
+            "enableCapture": true,
+            "messageRetentionInDays": 1,
+            "partitionCount": 4,
+            "captureEnabled": true,
+            "skipEmptyArchives": true,
+            "captureTime": 900,
+            "captureSize": 314572800,
+            "captureNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}/product"
+          }
+        ]
+      }
+    }
+  }

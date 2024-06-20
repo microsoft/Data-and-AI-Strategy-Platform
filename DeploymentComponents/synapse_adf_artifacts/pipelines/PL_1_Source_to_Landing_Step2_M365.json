@@ -1,0 +1,622 @@
+{
+    "name": "PL_1_Source_to_Landing_Step2_M365",
+    "properties": {
+        "activities": [
+            {
+                "name": "FolderPath with Timestamp",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Set Load Type",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "folderpath_w_ingestionType",
+                    "value": {
+                        "value": "@concat(\n            pipeline().parameters.outputFolderPath\n            ,variables('load_type')\n            ,'/'\n            ,formatDateTime(utcnow(),'yyyy'), '/'\n            ,formatDateTime(utcnow(),'MM'), '/'\n            ,formatDateTime(utcnow(),'dd'), '/'\n            ,formatDateTime(utcnow(),'HH'), '/'\n            ,formatDateTime(utcnow(),'mm'), '/'\n         )",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Update Logging Record For Success",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Output File to Log",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[LogDataFromSource]",
+                        "storedProcedureParameters": {
+                            "destination_filename": {
+                                "type": "String",
+                                "value": {
+                                    "value": "'Multiple'",
+                                    "type": "Expression"
+                                }
+                            },
+                            "destination_folderpath": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@variables('folderpath_w_ingestionType')",
+                                    "type": "Expression"
+                                }
+                            },
+                            "id_to_update": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.id_to_update",
+                                    "type": "Expression"
+                                }
+                            },
+                            "ingestion_status": {
+                                "type": "String",
+                                "value": "Processed"
+                            },
+                            "source": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.tableName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "watermark_value": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('watermark_value'),'-1'),'-1',pipeline().TriggerTime)",
+                                    "type": "Expression"
+                                }
+                            },
+                            "rows_copied_count": {
+                                "type": "Int64",
+                                "value": {
+                                    "value": "@variables('rows_copied_count')",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Switch1",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "Set watermark_value",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@string(pipeline().parameters.filterOnDate)",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "True",
+                            "activities": [
+                                {
+                                    "name": "Copy with Date Filter",
+                                    "type": "Copy",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "Office365Source",
+                                            "dateFilterColumn": {
+                                                "value": "@pipeline().parameters.dateFilterColumn",
+                                                "type": "Expression"
+                                            },
+                                            "startTime": {
+                                                "value": "@formatDateTime(replace(pipeline().parameters.startDate,'watermarkvalue',variables('watermark_value')))",
+                                                "type": "Expression"
+                                            },
+                                            "endTime": {
+                                                "value": "@formatDateTime(replace(pipeline().parameters.endDate,'watermarkvalue',variables('watermark_value')))",
+                                                "type": "Expression"
+                                            },
+                                            "userScopeFilterUri": {
+                                                "value": "@pipeline().parameters.scopeFilter",
+                                                "type": "Expression"
+                                            },
+                                            "outputColumns": {
+                                                "value": "@pipeline().parameters.outputColumns",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "sink": {
+                                            "type": "BinarySink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_M365",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "tableName": {
+                                                    "value": "@pipeline().parameters.tableName",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Binary_Folder_M365",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.outputContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@variables('folderpath_w_ingestionType')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Count rows copied",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Copy with Date Filter",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "rows_copied_count",
+                                        "value": {
+                                            "value": "@string(activity('Copy with Date Filter').output.dataWritten)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "False",
+                            "activities": [
+                                {
+                                    "name": "Copy without Date Filter",
+                                    "type": "Copy",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "Office365Source",
+                                            "userScopeFilterUri": {
+                                                "value": "@pipeline().parameters.scopeFilter",
+                                                "type": "Expression"
+                                            },
+                                            "outputColumns": {
+                                                "value": "@pipeline().parameters.outputColumns",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "sink": {
+                                            "type": "BinarySink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_M365",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "tableName": {
+                                                    "value": "@pipeline().parameters.tableName",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Binary_Folder_M365",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.outputContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@variables('folderpath_w_ingestionType')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Count rows copied without filter",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Copy without Date Filter",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "rows_copied_count",
+                                        "value": {
+                                            "value": "@string(activity('Copy without Date Filter').output.dataWritten)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set Load Type",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Check if First Load",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "load_type",
+                    "value": {
+                        "value": "@if(equals(activity('Check if First Load').output.firstRow.firstLoad,'Yes'),'full','incremental')",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Check if First Load",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[DetermineFullOrDeltaLoad]",
+                        "storedProcedureParameters": {
+                            "control_table_record_id": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.control_table_record_id",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Get Prior Watermark Value",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "FolderPath with Timestamp",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[GetSourceDataWatermarkValue]",
+                        "storedProcedureParameters": {
+                            "control_table_record_id": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@pipeline().parameters.control_table_record_id",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Set watermark_value",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Get Prior Watermark Value",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "watermark_value",
+                    "value": {
+                        "value": "@activity('Get Prior Watermark Value').output.firstRow.WatermarkValue",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Output File to Log",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Switch1",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "additionalColumns": [
+                            {
+                                "name": "fileName",
+                                "value": ""
+                            },
+                            {
+                                "name": "folderPath",
+                                "value": {
+                                    "value": "@variables('folderpath_w_ingestionType')",
+                                    "type": "Expression"
+                                }
+                            }
+                        ],
+                        "sqlReaderQuery": "SELECT TOP 1 * FROM [dbo].[ControlTable]",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobFSWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".txt"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "mappings": [
+                            {
+                                "source": {
+                                    "name": "fileName",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "fileName",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "folderPath",
+                                    "type": "String"
+                                },
+                                "sink": {
+                                    "name": "folderPath",
+                                    "type": "String",
+                                    "physicalType": "String"
+                                }
+                            }
+                        ],
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "DS_Landing_DelimitedText_File_HeaderTrue",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "container": {
+                                "value": "@pipeline().parameters.outputContainer",
+                                "type": "Expression"
+                            },
+                            "folderPath": {
+                                "value": "@concat('ingested_data_log/',\npipeline().parameters.outputFolderPath\n)",
+                                "type": "Expression"
+                            },
+                            "fileName": {
+                                "value": "@concat(utcnow(),guid(),'.csv')",
+                                "type": "Expression"
+                            },
+                            "encoding": "UTF-8",
+                            "firstRowHeader": true,
+                            "delimiter": ",",
+                            "compression": "None"
+                        }
+                    }
+                ]
+            }
+        ],
+        "parameters": {
+            "tableName": {
+                "type": "string"
+            },
+            "outputContainer": {
+                "type": "String"
+            },
+            "outputFolderPath": {
+                "type": "string"
+            },
+            "outputColumns": {
+                "type": "object"
+            },
+            "id_to_update": {
+                "type": "string"
+            },
+            "filterOnDate": {
+                "type": "string"
+            },
+            "scopeFilter": {
+                "type": "string"
+            },
+            "dateFilterColumn": {
+                "type": "string"
+            },
+            "startDate": {
+                "type": "string"
+            },
+            "endDate": {
+                "type": "string"
+            },
+            "control_table_record_id": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "folderpath_w_ingestionType": {
+                "type": "String"
+            },
+            "filename_w_timestamp": {
+                "type": "String"
+            },
+            "ingestion_condition": {
+                "type": "String"
+            },
+            "rows_copied_count": {
+                "type": "String"
+            },
+            "load_type": {
+                "type": "String"
+            },
+            "watermark_value": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "SourceToLandingZone/IngestionPatterns"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-26T17:01:27Z"
+    }
+}

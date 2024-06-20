@@ -1,0 +1,109 @@
+{
+	"name": "df_IndividualCustomer_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"name": "Taxpayer"
+				}
+			],
+			"sinks": [
+				{
+					"name": "IndividualCustomer"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerId as string,",
+				"          OriginalCustomerID as string,",
+				"          IndividualCustomerLastName as string,",
+				"          IndividualCustomerFirstName as string,",
+				"          IndividualCustomerName as string,",
+				"          IndividualCustomerMiddleName as string,",
+				"          DateOfBirth as string,",
+				"          DateOfDeath as string,",
+				"          SexId as string,",
+				"          GenderId as string,",
+				"          EthnicCategoryId as string,",
+				"          RacialCategoryId as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/IndividualCustomer/*']) ~> source1",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"source1, Taxpayer join(OriginalCustomerID == OriginalTaxpayerID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1 select(mapColumn(",
+				"          CustomerId = TaxpayerId,",
+				"          OriginalCustomerID,",
+				"          IndividualCustomerLastName,",
+				"          IndividualCustomerFirstName,",
+				"          IndividualCustomerName,",
+				"          IndividualCustomerMiddleName,",
+				"          DateOfBirth,",
+				"          DateOfDeath,",
+				"          SexId,",
+				"          GenderId,",
+				"          EthnicCategoryId,",
+				"          RacialCategoryId",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'IndividualCustomer') ~> IndividualCustomer"
+			]
+		}
+	}
+}

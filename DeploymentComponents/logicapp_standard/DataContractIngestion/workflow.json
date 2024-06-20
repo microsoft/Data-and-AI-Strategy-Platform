@@ -1,0 +1,512 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "AuditRequestWorkflowEnded": {
+                "inputs": {
+                    "parameters": {
+                        "query": "EXEC [dbo].[usp_CreateAuditRequestRecord] @HttpRequest, @AuditMessage, @MetaDataInserted",
+                        "queryParameters": {
+                            "AuditMessage": "Workflow Ended",
+                            "HttpRequest": "@variables('Request_Body')",
+                            "MetaDataInserted": "@if(equals(variables('MetadataInserted'), true), true, false)"
+                        }
+                    },
+                    "retryPolicy": {
+                        "count": 3,
+                        "interval": "PT20S",
+                        "type": "fixed"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "IfCompleteHttpRequest": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "AuditRequestWorkflowStarted": {
+                "inputs": {
+                    "parameters": {
+                        "query": "EXEC [dbo].[usp_CreateAuditRequestRecord] @HttpRequest, @AuditMessage, @MetaDataInserted",
+                        "queryParameters": {
+                            "AuditMessage": "Workflow Started",
+                            "HttpRequest": "@variables('Request_Body')",
+                            "MetaDataInserted": "false"
+                        }
+                    },
+                    "retryPolicy": {
+                        "count": 3,
+                        "interval": "PT20S",
+                        "type": "fixed"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql-3",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "RequestBodyAsString": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "IfCompleteHttpRequest": {
+                "actions": {
+                    "InsertNewSourceIfNotExists": {
+                        "actions": {
+                            "AuditSuccessRequest": {
+                                "inputs": {
+                                    "parameters": {
+                                        "query": "EXEC [dbo].[usp_CreateAuditRequestRecord] @HttpRequest, @AuditMessage, @MetaDataInserted",
+                                        "queryParameters": {
+                                            "AuditMessage": "New data source enrolled in ingestion",
+                                            "HttpRequest": "@variables('Request_Body')",
+                                            "MetaDataInserted": "true"
+                                        }
+                                    },
+                                    "retryPolicy": {
+                                        "count": 3,
+                                        "interval": "PT20S",
+                                        "type": "fixed"
+                                    },
+                                    "serviceProviderConfiguration": {
+                                        "connectionName": "sql",
+                                        "operationId": "executeQuery",
+                                        "serviceProviderId": "/serviceProviders/sql"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Call_Orchestrator": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "ServiceProvider"
+                            },
+                            "Call_Orchestrator": {
+                                "inputs": {
+                                    "parameters": {
+                                        "storedProcedureName": "CreateIngestionRecord_Orchestrator",
+                                        "storedProcedureParameters": {
+                                            "body": "@variables('Request_Body')"
+                                        }
+                                    },
+                                    "serviceProviderConfiguration": {
+                                        "connectionName": "sql",
+                                        "operationId": "executeStoredProcedure",
+                                        "serviceProviderId": "/serviceProviders/sql"
+                                    }
+                                },
+                                "type": "ServiceProvider"
+                            },
+                            "SetMetadataVariableTrue": {
+                                "inputs": {
+                                    "name": "MetadataInserted",
+                                    "value": true
+                                },
+                                "runAfter": {
+                                    "AuditSuccessRequest": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "SetVariable"
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "AuditRequestRecordExists": {
+                                    "inputs": {
+                                        "parameters": {
+                                            "query": "EXEC [dbo].[usp_CreateAuditRequestRecord] @HttpRequest, @AuditMessage, @MetaDataInserted",
+                                            "queryParameters": {
+                                                "AuditMessage": "Source container and folder already enrolled in ingestion",
+                                                "HttpRequest": "@variables('Request_Body')",
+                                                "MetaDataInserted": "false"
+                                            }
+                                        },
+                                        "retryPolicy": {
+                                            "count": 3,
+                                            "interval": "PT20S",
+                                            "type": "fixed"
+                                        },
+                                        "serviceProviderConfiguration": {
+                                            "connectionName": "sql",
+                                            "operationId": "executeQuery",
+                                            "serviceProviderId": "/serviceProviders/sql"
+                                        }
+                                    },
+                                    "type": "ServiceProvider"
+                                },
+                                "SetMetadataVariableFalse2": {
+                                    "inputs": {
+                                        "name": "MetadataInserted",
+                                        "value": false
+                                    },
+                                    "runAfter": {
+                                        "AuditRequestRecordExists": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable"
+                                }
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@variables('SourceId')",
+                                        0
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {
+                            "SetConditionalVariable": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "If"
+                    },
+                    "RecordExistsCheck": {
+                        "inputs": {
+                            "parameters": {
+                                "storedProcedureName": "usp_GetIngestionRecordBySource",
+                                "storedProcedureParameters": {
+                                    "SourceContainerName": "@{body('ParseHttpRequest')?['SourceContainer']}",
+                                    "SourceFileName": "@{body('ParseHttpRequest')?['fileName']}",
+                                    "SourceFolderPath": "@{body('ParseHttpRequest')?['SourceFolderPath']}"
+                                }
+                            },
+                            "serviceProviderConfiguration": {
+                                "connectionName": "sql",
+                                "operationId": "executeStoredProcedure",
+                                "serviceProviderId": "/serviceProviders/sql"
+                            }
+                        },
+                        "type": "ServiceProvider"
+                    },
+                    "SetConditionalVariable": {
+                        "inputs": {
+                            "name": "SourceId",
+                            "value": "@if(equals(string(outputs('RecordExistsCheck')?['body']?['resultSets']),'[]'),0,outputs('RecordExistsCheck')?['body']?['resultSets']?[0]?[0]?['id'])"
+                        },
+                        "runAfter": {
+                            "RecordExistsCheck": [
+                                "Succeeded"
+                            ]
+                        },
+                        "type": "SetVariable"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "AuditRequestIncompleteHttpRequest": {
+                            "inputs": {
+                                "parameters": {
+                                    "query": "EXEC [dbo].[usp_CreateAuditRequestRecord] @HttpRequest, @AuditMessage, @MetaDataInserted",
+                                    "queryParameters": {
+                                        "AuditMessage": "HTTP request body incomplete",
+                                        "HttpRequest": "@variables('Request_Body')",
+                                        "MetaDataInserted": "false"
+                                    }
+                                },
+                                "retryPolicy": {
+                                    "count": 3,
+                                    "interval": "PT20S",
+                                    "type": "fixed"
+                                },
+                                "serviceProviderConfiguration": {
+                                    "connectionName": "sql",
+                                    "operationId": "executeQuery",
+                                    "serviceProviderId": "/serviceProviders/sql"
+                                }
+                            },
+                            "type": "ServiceProvider"
+                        },
+                        "SetMetadataVariableFalse": {
+                            "inputs": {
+                                "name": "MetadataInserted",
+                                "value": false
+                            },
+                            "runAfter": {
+                                "AuditRequestIncompleteHttpRequest": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "SetVariable"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@if(or(empty(body('ParseHttpRequest')?['Sink Container']),empty(body('ParseHttpRequest')?['dynamicSinkPath']),empty(body('ParseHttpRequest')?['Source Container'])),0,1)",
+                                1
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "InitializeMetadataVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "If"
+            },
+            "InitializeADFTriggerVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "AdfTriggerName",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "InitializeConditionalVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "InitializeConditionalVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "SourceId",
+                            "type": "integer",
+                            "value": 0
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "AuditRequestWorkflowStarted": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "InitializeMetadataVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "MetadataInserted",
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "InitializeADFTriggerVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "ParseHttpRequest": {
+                "inputs": {
+                    "content": "@triggerBody()[0]",
+                    "schema": {
+                        "Data Loading Behavior": {
+                            "type": "string"
+                        },
+                        "DataContractID": {
+                            "type": "string"
+                        },
+                        "ScheduleActive": {
+                            "type": "string"
+                        },
+                        "ScheduleFrequency": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "ScheduleRecurrence": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "ScheduleRunOnSubmit": {
+                            "type": "string"
+                        },
+                        "ScheduleStartDate": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "ScheduleStartTime": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "ScheduleTriggerName": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "Sink Container": {
+                            "type": "string"
+                        },
+                        "Source Container": {
+                            "type": "string"
+                        },
+                        "Stored Procedure Name": {
+                            "type": "string"
+                        },
+                        "Top Level PipeLine Name": {
+                            "type": "string"
+                        },
+                        "Trigger Name": {
+                            "type": "string"
+                        },
+                        "dynamicSinkPath": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "runAfter": {},
+                "type": "ParseJson"
+            },
+            "RequestBodyAsString": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "Request_Body",
+                            "type": "string",
+                            "value": "@{body('ParseHttpRequest')}"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "ParseHttpRequest": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "Response": {
+                "inputs": {
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "AuditRequestWorkflowEnded": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "inputs": {
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Data Loading Behavior": {
+                                    "type": "string"
+                                },
+                                "DataContractID": {
+                                    "type": "string"
+                                },
+                                "ScheduleActive": {
+                                    "type": "string"
+                                },
+                                "ScheduleFrequency": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "ScheduleRecurrence": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "ScheduleRunOnSubmit": {
+                                    "type": "string"
+                                },
+                                "ScheduleStartDate": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "ScheduleStartTime": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "ScheduleTriggerName": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "Sink Container": {
+                                    "type": "string"
+                                },
+                                "Source Container": {
+                                    "type": "string"
+                                },
+                                "Stored Procedure Name": {
+                                    "type": "string"
+                                },
+                                "Top Level PipeLine Name": {
+                                    "type": "string"
+                                },
+                                "Trigger Name": {
+                                    "type": "string"
+                                },
+                                "dynamicSinkPath": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "DataContractID",
+                                "Data Loading Behavior",
+                                "dynamicSinkPath",
+                                "ScheduleActive",
+                                "ScheduleFrequency",
+                                "ScheduleRecurrence",
+                                "ScheduleRunOnSubmit",
+                                "ScheduleStartDate",
+                                "ScheduleStartTime",
+                                "ScheduleTriggerName",
+                                "Sink Container",
+                                "Source Container",
+                                "Stored Procedure Name",
+                                "Top Level PipeLine Name",
+                                "Trigger Name"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

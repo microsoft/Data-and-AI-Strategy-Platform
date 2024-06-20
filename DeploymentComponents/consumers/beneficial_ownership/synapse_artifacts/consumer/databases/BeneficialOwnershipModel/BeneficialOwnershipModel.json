@@ -1,0 +1,25 @@
+{
+	"name": "BeneficialOwnershipModel",
+	"properties": {
+		"Name": "BeneficialOwnershipModel",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/BeneficialOwnershipModel",
+			"Properties": {
+				"FormatType": "parquet",
+				"LinkedServiceName": "LS_DataLake"
+			}
+		},
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 28,
+		"ObjectId": "74de953a-f6f6-4859-9ce3-2938f33b0db4"
+	},
+	"type": "DATABASE"
+}

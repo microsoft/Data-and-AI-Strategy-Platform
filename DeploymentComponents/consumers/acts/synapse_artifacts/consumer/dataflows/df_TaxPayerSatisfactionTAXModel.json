@@ -1,0 +1,60 @@
+{
+    "name": "df_TaxPayerSatisfactionTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "TaxpayerSatisfaction"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "TaxpayerSatisfactionTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          ID as short,",
+                "          UpdatedOn as date,",
+                "          TaxpayerID as integer,",
+                "          Gender as string,",
+                "          Age as short,",
+                "          Rating as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> TaxpayerSatisfaction",
+                "TaxpayerSatisfaction sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'TaxpayerSatisfaction') ~> TaxpayerSatisfactionTAXModel"
+            ]
+        }
+    }
+}

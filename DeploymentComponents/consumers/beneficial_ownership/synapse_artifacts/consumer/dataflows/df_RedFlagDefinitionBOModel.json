@@ -1,0 +1,182 @@
+{
+	"name": "df_RedFlagDefinitionBOModel",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Mapping"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "OpenCorporate"
+				},
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "OpenSanctions"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "unpivot1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "union1"
+				},
+				{
+					"name": "aggregate2"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "derivedColumn2"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     lake_db_name as string ('BeneficialOwnershipModel')",
+				"}",
+				"source(output(",
+				"          company_number as string,",
+				"          jurisdiction_code as string,",
+				"          name as string,",
+				"          normalised_name as string,",
+				"          company_type as string,",
+				"          nonprofit as boolean,",
+				"          current_status as string,",
+				"          incorporation_date as string,",
+				"          dissolution_date as string,",
+				"          branch as string,",
+				"          business_number as string,",
+				"          current_alternative_legal_name as string,",
+				"          current_alternative_legal_name_language as string,",
+				"          home_jurisdiction_text as string,",
+				"          native_company_number as string,",
+				"          previous_names as string,",
+				"          retrieved_at as string,",
+				"          registry_url as string,",
+				"          restricted_for_marketing as string,",
+				"          inactive as boolean,",
+				"          accounts_next_due as string,",
+				"          accounts_reference_date as string,",
+				"          accounts_last_made_up_date as string,",
+				"          annual_return_next_due as string,",
+				"          annual_return_last_made_up_date as string,",
+				"          has_been_liquidated as string,",
+				"          has_insolvency_history as string,",
+				"          has_charges as string,",
+				"          number_of_employees as string,",
+				"          {registered_address.street_address} as string,",
+				"          {registered_address.locality} as string,",
+				"          {registered_address.region} as string,",
+				"          {registered_address.postal_code} as string,",
+				"          {registered_address.country} as string,",
+				"          {registered_address.in_full} as string,",
+				"          home_jurisdiction_code as string,",
+				"          home_jurisdiction_company_number as string,",
+				"          industry_code_uids as string,",
+				"          latest_accounts_date as string,",
+				"          latest_accounts_cash as string,",
+				"          latest_accounts_assets as string,",
+				"          latest_accounts_liabilities as string",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'raw',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true,",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Corporate/AllData/*/*/*/*/*/companies.csv']) ~> OpenCorporate",
+				"source(output(",
+				"          EntityID as string,",
+				"          Category as string,",
+				"          Description as string,",
+				"          Evidence as string,",
+				"          EntityName as string,",
+				"          Address as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Sanctions/SanctionsDF_Processed/*/*']) ~> OpenSanctions",
+				"OpenCorporate filter(not(isNull(company_number)) && or(or(equals(has_charges,'TRUE'),equals(has_been_liquidated,'TRUE')),equals(has_insolvency_history,'TRUE'))) ~> filter1",
+				"select1 unpivot(output(",
+				"          Description as string,",
+				"          has_been_liquidated as string,",
+				"          has_insolvency_history as string,",
+				"          has_charges as string",
+				"     ),",
+				"     ungroupBy(company_number),",
+				"     lateral: true,",
+				"     ignoreNullPivots: true) ~> unpivot1",
+				"filter1 select(mapColumn(",
+				"          company_number,",
+				"          has_been_liquidated,",
+				"          has_insolvency_history,",
+				"          has_charges",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"unpivot1 aggregate(groupBy(Description),",
+				"     count = count(Description)) ~> aggregate1",
+				"union1 keyGenerate(output(RedFlagID as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"derivedColumn1 select(mapColumn(",
+				"          FlagID = RedFlagID,",
+				"          Category,",
+				"          Description,",
+				"          FlagWeight",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"aggregate1, aggregate2 union(byName: true)~> union1",
+				"derivedColumn2 aggregate(groupBy(Description),",
+				"     count = count(Description)) ~> aggregate2",
+				"surrogateKey1 derive(Category = 'Sanction',",
+				"          FlagWeight = '1.0') ~> derivedColumn1",
+				"OpenSanctions derive(Description = 'Sanction') ~> derivedColumn2",
+				"select2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'RedFlagDefinition') ~> sink1"
+			]
+		}
+	}
+}

@@ -1,0 +1,262 @@
+{
+    "name": "PL_1_Source_to_Landing_OpenData",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Control Table Details for Source Data",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Set TriggerName",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT      *\nFROM        dbo.ControlTable\nWHERE       DataLoadingBehaviorSettings LIKE '%Copy_to_Landing%'\nAND         CopyEnabled=1",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "For Each Control Table Record",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Control Table Details for Source Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Control Table Details for Source Data').output.value",
+                        "type": "Expression"
+                    },
+                    "batchCount": 4,
+                    "activities": [
+                        {
+                            "name": "Set Source URL",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "URL",
+                                "value": {
+                                    "value": "@json(item().SourceObjectSettings).Url",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "If gz - unzip",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set Source URL",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@equals(json(item().CopySourceSettings).fileType,'gz')",
+                                    "type": "Expression"
+                                },
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "Copy To Landing",
+                                        "type": "Copy",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "timeout": "0.12:00:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "BinarySource",
+                                                "storeSettings": {
+                                                    "type": "HttpReadSettings",
+                                                    "requestMethod": "GET"
+                                                },
+                                                "formatSettings": {
+                                                    "type": "BinaryReadSettings"
+                                                }
+                                            },
+                                            "sink": {
+                                                "type": "BinarySink",
+                                                "storeSettings": {
+                                                    "type": "AzureBlobFSWriteSettings"
+                                                }
+                                            },
+                                            "enableStaging": false
+                                        },
+                                        "inputs": [
+                                            {
+                                                "referenceName": "DS_REST_OpenData",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "URL": "@variables('URL')"
+                                                }
+                                            }
+                                        ],
+                                        "outputs": [
+                                            {
+                                                "referenceName": "DS_Landing_Binary_File",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "container": {
+                                                        "value": "@json(item().SinkObjectSettings).container",
+                                                        "type": "Expression"
+                                                    },
+                                                    "folderPath": {
+                                                        "value": "@json(item().SinkObjectSettings).folderPath",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileName": {
+                                                        "value": "@json(item().SinkObjectSettings).fileName",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Copy To Landing_gz",
+                                        "type": "Copy",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "timeout": "0.12:00:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "BinarySource",
+                                                "storeSettings": {
+                                                    "type": "HttpReadSettings",
+                                                    "requestMethod": "GET"
+                                                },
+                                                "formatSettings": {
+                                                    "type": "BinaryReadSettings"
+                                                }
+                                            },
+                                            "sink": {
+                                                "type": "BinarySink",
+                                                "storeSettings": {
+                                                    "type": "AzureBlobFSWriteSettings"
+                                                }
+                                            },
+                                            "enableStaging": false
+                                        },
+                                        "inputs": [
+                                            {
+                                                "referenceName": "DS_REST_OpenData_Compressed",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "URL": "@variables('URL')",
+                                                    "compression": "gzip"
+                                                }
+                                            }
+                                        ],
+                                        "outputs": [
+                                            {
+                                                "referenceName": "DS_Landing_Binary_File",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "container": {
+                                                        "value": "@json(item().SinkObjectSettings).container",
+                                                        "type": "Expression"
+                                                    },
+                                                    "folderPath": {
+                                                        "value": "@json(item().SinkObjectSettings).folderPath",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileName": {
+                                                        "value": "@json(item().SinkObjectSettings).fileName",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set TriggerName",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "TriggerName",
+                    "value": {
+                        "value": "@if(equals(pipeline().parameters.TriggerNameOverride,'N/A')\n,pipeline().TriggerName, pipeline().parameters.TriggerNameOverride)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "TriggerNameOverride": {
+                "type": "string",
+                "defaultValue": "N/A"
+            }
+        },
+        "variables": {
+            "TriggerName": {
+                "type": "String"
+            },
+            "URL": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-09-25T02:43:26Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

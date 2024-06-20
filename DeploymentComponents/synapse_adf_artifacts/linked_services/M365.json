@@ -1,0 +1,23 @@
+{
+    "properties": {
+        "annotations": [],
+        "type": "Office365",
+        "typeProperties": {
+            "office365TenantId": "inputTenantID",
+            "servicePrincipalTenantId": "inputTenantID",
+            "servicePrincipalId": "FILLINPOSTDEPLOYMENT",
+            "servicePrincipalKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "LS_KeyVault",
+                    "type": "LinkedServiceReference"
+                },
+                "secretName": "FILLINPOSTDEPLOYMENT"
+            }
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

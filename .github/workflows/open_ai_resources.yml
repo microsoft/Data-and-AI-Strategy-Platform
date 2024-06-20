@@ -1,0 +1,460 @@
+# This is a basic workflow to help you get started with Actions
+
+name: open-ai-resources
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow from another workflow
+  workflow_call:
+    secrets:
+      TENANT_ID:
+        required: true
+      SUBSCRIPTION_ID:
+        required: true
+      SERVICE_PRINCIPAL_CLIENT_ID:
+        required: true
+      DNS_ZONE_SUBSCRIPTION_ID:
+        required: false
+    inputs:
+      environment:
+        required: true
+        type: string
+      envFolderPath:
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+          
+  create-open-ai-resources:
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: ${{ inputs.environment }}
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_feature_flags/feature_flags_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/networking_setup/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+          $json_data = Get-Content "./DeploymentComponents/variables/entra_assignments/variables_${{ inputs.envFolderPath }}.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Create resource group for environment resources and get service principal name
+      - name: Set Env Variables Needed For Downstream Actions
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $spDetails = az ad sp show --id "${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}" | ConvertFrom-Json  
+
+            # Service Principal Name
+            $servicePrincipalName = $spDetails.appDisplayName
+            Write-Output "::add-mask::$servicePrincipalName"
+            "servicePrincipalName=$servicePrincipalName" >> $env:GITHUB_ENV
+
+            # Service Principal AAD Identity ID
+            $servicePrincipalObjectId = $spDetails.id
+            Write-Output "::add-mask::$servicePrincipalObjectId"
+            "servicePrincipalObjectId=$servicePrincipalObjectId" >> $env:GITHUB_ENV
+
+            # Tags with Single Quotes For Bicep Templates
+            $tags_single_quote = '${{ env.tags }}' -replace '"', "'"
+            "tags_single_quote=$tags_single_quote" >> $env:GITHUB_ENV
+
+
+            if ( '${{ env.Entra_Groups_Data_Publishers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Publishers = '['+ '${{ env.Entra_Groups_Data_Publishers }}' + ']'
+              "Entra_Groups_Data_Publishers=$Entra_Groups_Data_Publishers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Producers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Producers = '['+ '${{ env.Entra_Groups_Data_Producers }}' + ']'
+              "Entra_Groups_Data_Producers=$Entra_Groups_Data_Producers" >> $env:GITHUB_ENV
+            }
+
+            if ( '${{ env.Entra_Groups_Data_Consumers }}'.SubString(0,1) -ne "[" ) { 
+              $Entra_Groups_Data_Consumers = '['+ '${{ env.Entra_Groups_Data_Consumers }}' + ']'
+              "Entra_Groups_Data_Consumers=$Entra_Groups_Data_Consumers" >> $env:GITHUB_ENV
+            }
+
+            $Entra_Group_Admin_HashTable = '${{ env.Entra_Group_Admin }}' | ConvertFrom-Json
+            $Entra_Group_Admin_ID = $Entra_Group_Admin_HashTable.Group_ID
+            "Entra_Group_Admin_ID=$Entra_Group_Admin_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Admin_Name = $Entra_Group_Admin_HashTable.Group_Name
+            "Entra_Group_Admin_Name=$Entra_Group_Admin_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_HashTable = '${{ env.Entra_Group_Shared_Service }}' | ConvertFrom-Json
+            $Entra_Group_Shared_Service_ID = $Entra_Group_Shared_Service_HashTable.Group_ID
+            "Entra_Group_Shared_Service_ID=$Entra_Group_Shared_Service_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Shared_Service_Name = $Entra_Group_Shared_Service_HashTable.Group_Name
+            "Entra_Group_Shared_Service_Name=$Entra_Group_Shared_Service_Name" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_HashTable = '${{ env.Entra_Group_Governance }}' | ConvertFrom-Json
+            $Entra_Group_Governance_ID = $Entra_Group_Governance_HashTable.Group_ID
+            "Entra_Group_Governance_ID=$Entra_Group_Governance_ID" >> $env:GITHUB_ENV
+            $Entra_Group_Governance_Name = $Entra_Group_Governance_HashTable.Group_Name
+            "Entra_Group_Governance_Name=$Entra_Group_Governance_Name" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      # Create resource group for environment resources and get service principal name
+      - name: Parse Entra Groups for Bicep
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            # parse entra groups
+            $Entra_Group_Admin_Json = '${{ env.Entra_Group_Admin }}' -replace '"', "'"
+            "Entra_Group_Admin_Json=$Entra_Group_Admin_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Shared_Service_Json = '${{ env.Entra_Group_Shared_Service }}' -replace '"', "'"
+            "Entra_Group_Shared_Service_Json=$Entra_Group_Shared_Service_Json" >> $env:GITHUB_ENV
+
+            $Entra_Group_Governance_Json = '${{ env.Entra_Group_Governance }}' -replace '"', "'"
+            "Entra_Group_Governance_Json=$Entra_Group_Governance_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Publishers_Json = '${{ env.Entra_Groups_Data_Publishers }}' -replace '"', "'"
+            "Entra_Groups_Data_Publishers_Json=$Entra_Groups_Data_Publishers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Producers_Json = '${{ env.Entra_Groups_Data_Producers }}' -replace '"', "'"
+            "Entra_Groups_Data_Producers_Json=$Entra_Groups_Data_Producers_Json" >> $env:GITHUB_ENV
+
+            $Entra_Groups_Data_Consumers_Json = '${{ env.Entra_Groups_Data_Consumers }}' -replace '"', "'"
+            "Entra_Groups_Data_Consumers_Json=$Entra_Groups_Data_Consumers_Json" >> $env:GITHUB_ENV
+          azPSVersion: "latest"
+
+      - name: Deploy OpenAI Service
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/cognitive_service.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_service.json
+            location=${{ env.azureResourceLocation }}
+            cognitiveServiceName=${{ env.OpenAIServiceName }}
+            DeployKeyVault=${{ env.DeployKeyVault }}
+            keyVaultRgName=${{ env.PrimaryRgName }}
+            keyVaultName=${{ env.keyVaultName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Deploy Cognitive Search
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/cognitive_search.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_cognitive_search.json
+            location=${{ env.azureResourceLocation }}
+            cognitiveSearchName=${{ env.OpenAICognitiveSearchName }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Open AI Demo Application - Deploy App Service Plan
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/app_service_plan_linux.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_application_app_service_plan.json
+            appServicePlanName=${{ env.OpenAIDemoAppServicePlanName }} 
+          failOnStdErr: false
+
+      - name: Open AI Demo Application - Deploy Key Vault
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/keyvault.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_application_keyvault.json
+            location=${{ env.azureResourceLocation }}
+            keyVaultName=${{ env.OpenAIDemoKeyVaultName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Open AI Demo Application - Document Intelligence
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/cognitive_service.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_application_document_intelligence.json
+            location=${{ env.azureResourceLocation }}
+            cognitiveServiceName=${{ env.OpenAIDemoDocumentIntelligenceName }}
+            DeployKeyVault=True
+            keyVaultRgName=${{ env.OpenAIRgName }}
+            keyVaultName=${{ env.OpenAIDemoKeyVaultName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            AllowAccessToIpRange=${{ env.AllowAccessToIpRange }}
+            IpRangeCidr=${{ env.IpRangeCidr }}
+          failOnStdErr: false
+
+      - name: Open AI Demo Application - Deploy App Insights
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/appinsights.bicep
+          # Supply deployment parameter values.
+          parameters: ./DeploymentComponents/bicep_parameters/${{ inputs.envFolderPath }}/openai_application_appinsights.json
+            location=${{ env.azureResourceLocation }}
+            appInsightsName=${{ env.OpenAIDemoAppInsightsName }} 
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+          failOnStdErr: false
+
+      - name: Open AI Demo Application - Deploy OpenAI Front-Facing App
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/openai_demo_application.bicep
+          # Supply deployment parameter values.
+          parameters:
+            location=${{ env.azureResourceLocation }}
+            appServiceName=${{ env.OpenAIDemoAppName }}
+            keyVaultName=${{ env.OpenAIDemoKeyVaultName }}
+            applicationInsightsName=${{ env.OpenAIDemoAppInsightsName }}
+            appServicePlanName=${{ env.OpenAIDemoAppServicePlanName }}
+            openAiServiceName=${{ env.OpenAIServiceName }}
+            AISearchName=${{ env.OpenAICognitiveSearchName }}
+            storageAccountName=${{ env.dataLakeName }}
+            DeployWithCustomNetworking=${{ env.DeployWithCustomNetworking }} 
+            CreatePrivateEndpoints=${{ env.CreatePrivateEndpoints }} 
+            CreatePrivateEndpointsInSameRgAsResource=${{ env.CreatePrivateEndpointsInSameRgAsResource }} 
+            UseManualPrivateLinkServiceConnections=${{ env.UseManualPrivateLinkServiceConnections }} 
+            VnetforPrivateEndpointsRgName=${{ env.VnetforPrivateEndpointsRgName }} 
+            VnetforPrivateEndpointsName=${{ env.VnetforPrivateEndpointsName }} 
+            PrivateEndpointSubnetName=${{ env.PrivateEndpointSubnetName }} 
+            DNS_ZONE_SUBSCRIPTION_ID=${{ secrets.DNS_ZONE_SUBSCRIPTION_ID }}
+            PrivateDNSZoneRgName=${{ env.PrivateDNSZoneRgName }} 
+            PrivateEndpointId=${{ env.PrivateEndpointId }} 
+            VnetForResourcesRgName=${{ env.VnetForResourcesRgName }}
+            VnetForResourcesName=${{ env.VnetForResourcesName }}
+            DeployOpenAiDemoAppInVnet=${{ env.DeployOpenAiDemoAppInVnet }} 
+            OpenAiDemoAppSubnetName=${{ env.OpenAiDemoAppSubnetName }} 
+            DeployResourcesWithPublicAccess=${{ env.DeployResourcesWithPublicAccess }}
+            DeployLogAnalytics=${{ env.DeployLogAnalytics }}
+            logAnalyticsRG=${{ env.PrimaryRgName }}
+            logAnalyticsName=${{ env.logAnalyticsName }} 
+          failOnStdErr: false
+
+      - name: Deploy RBAC for Open AI Resources
+        uses: Azure/arm-deploy@v1
+        with:
+          # Provide the scope of the deployment. Valid values are: 'resourcegroup', 'managementgroup', 'subscription'
+          scope: 'resourcegroup'
+          # Provide the name of a resource group, only required for resource Group deployments.
+          resourceGroupName: ${{ env.OpenAIRgName }}
+          # Specify the path or URL to the Azure Resource Manager template.
+          template: ./DeploymentComponents/bicep_templates/rbac_dsdeployment_openai.bicep
+          # Supply deployment parameter values.
+          parameters: 
+            env=${{ inputs.envFolderPath }}
+            Service_Principal_Infra_Object_ID=${{ env.servicePrincipalObjectId }}
+            Assign_RBAC_for_CICD_Service_Principal=${{ env.Assign_RBAC_for_CICD_Service_Principal }}
+            Service_Principal_CICD_Object_ID=${{ env.Service_Principal_CICD_Object_ID }}
+            Entra_Group_Admin_Group_ID=${{ env.Entra_Group_Admin_ID }}
+            Entra_Group_Shared_Service_Group_ID=${{ env.Entra_Group_Shared_Service_ID }}
+            Assign_RBAC_for_Governance=${{ env.Assign_RBAC_for_Governance }}
+            Entra_Group_Governance_Group_ID=${{ env.Entra_Group_Governance_ID }}
+            Assign_RBAC_for_Publishers=${{ env.Assign_RBAC_for_Publishers }}
+            Entra_Groups_Data_Publishers=${{ env.Entra_Groups_Data_Publishers_Json }}
+            Assign_RBAC_for_Producers=${{ env.Assign_RBAC_for_Producers }}
+            Entra_Groups_Data_Producers=${{ env.Entra_Groups_Data_Producers_Json }}
+            Assign_RBAC_for_Consumers=${{ env.Assign_RBAC_for_Consumers }}
+            Entra_Groups_Data_Consumers=${{ env.Entra_Groups_Data_Consumers_Json }}
+            PrimaryRgName=${{ env.PrimaryRgName }}
+            dataLakeName=${{ env.dataLakeName }}
+            DeployOpenAIDemoApp=${{ env.DeployOpenAIDemoApp }}
+            OpenAICognitiveSearchName=${{ env.OpenAICognitiveSearchName }}
+            OpenAIServiceName=${{ env.OpenAIServiceName }}
+            keyVaultName=${{ env.OpenAIDemoKeyVaultName }} 
+            appServiceName=${{ env.OpenAIDemoAppName }}
+            documentIntelligenceName=${{ env.OpenAIDemoDocumentIntelligenceName }}
+          failOnStdErr: false
+
+      - name: Install NodeJs
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - &&\
+          sudo apt-get install -y nodejs
+
+      - name: Deploy App Using azd
+        if: ${{ env.DeployOpenAIDemoApp == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            curl -fsSL https://aka.ms/install-azd.sh | bash
+            azd config set auth.useAzCliAuth true
+            sudo apt install python-is-python3
+            New-Item -Path ./azd -ItemType Directory
+            Set-Location -Path ./azd
+
+            azd init -t azure-search-openai-demo --environment openaidemo --location ${{ env.azureResourceLocation }} --subscription ${{ secrets.SUBSCRIPTION_ID }}
+            azd env set AZURE_RESOURCE_GROUP ${{ env.OpenAIRgName }}
+            azd env set AZURE_LOCATION ${{ env.azureResourceLocation }}
+            azd env set AZURE_OPENAI_SERVICE ${{ env.OpenAIServiceName }}
+            azd env set AZURE_OPENAI_RESOURCE_GROUP ${{ env.OpenAIRgName }}
+            azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT chatGpt35Turbo0613
+            azd env set AZURE_OPENAI_EMB_DEPLOYMENT textEmbeddingAda002
+            azd env set AZURE_SEARCH_SERVICE ${{ env.OpenAICognitiveSearchName }}
+            azd env set AZURE_SEARCH_SERVICE_RESOURCE_GROUP ${{ env.OpenAIRgName }}
+            azd env set AZURE_FORMRECOGNIZER_SERVICE ${{ env.OpenAIDemoDocumentIntelligenceName }}
+            azd env set AZURE_FORMRECOGNIZER_RESOURCE_GROUP ${{ env.OpenAIRgName }}
+            azd env set AZURE_STORAGE_ACCOUNT ${{ env.dataLakeName }}
+            azd env set AZURE_STORAGE_RESOURCE_GROUP ${{ env.PrimaryRgName }}
+            azd config set defaults.subscription ${{ secrets.SUBSCRIPTION_ID }}
+            azd config set defaults.location ${{ env.azureResourceLocation }}
+            azd env set AZURE_SEARCH_INDEX gptkbindex
+            azd env set AZURE_STORAGE_CONTAINER raw
+            (Get-Content ./app/frontend/index.html).replace("GPT + Enterprise data | Sample", "Data Strategy | GPT + Enterprise Data") | Set-Content ./app/frontend/index.html
+            (Get-Content ./app/frontend/src/pages/layout/Layout.tsx).replace("GPT + Enterprise data | Sample", "Data Strategy | GPT + Enterprise Data") | Set-Content ./app/frontend/src/pages/layout/Layout.tsx
+            (Get-Content ./tests/e2e.py).replace("GPT + Enterprise data | Sample", "Data Strategy | GPT + Enterprise Data") | Set-Content ./tests/e2e.py
+            azd deploy --no-prompt
+            ./scripts/prepdocs.ps1
+          azPSVersion: "latest"

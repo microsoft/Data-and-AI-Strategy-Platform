@@ -1,0 +1,231 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_getDataContractRecordsDynamic",
+                        "storedProcedureParameters": {
+                            "ContractID": "@{body('Parse_JSON')?['contractID']}",
+                            "PatternType": "@{body('Parse_JSON')?['pattern']}"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Parse_JSON": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@triggerBody()",
+                    "schema": {
+                        "properties": {
+                            "contractID": {
+                                "type": "string"
+                            },
+                            "pattern": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "runAfter": {},
+                "type": "ParseJson"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_stored_procedure')['Resultsets'][0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Active": {
+                                    "type": "boolean"
+                                },
+                                "ActiveDate": {
+                                    "type": "string"
+                                },
+                                "BusinessContact": {
+                                    "type": "string"
+                                },
+                                "BusinessContactEmail": {
+                                    "type": "string"
+                                },
+                                "BusinessContactObjID": {
+                                    "type": "string"
+                                },
+                                "BusinessContactUPN": {
+                                    "type": "string"
+                                },
+                                "ContractID": {
+                                    "type": "string"
+                                },
+                                "ControlTableID": {},
+                                "CreatedBy": {
+                                    "type": "string"
+                                },
+                                "CreatedByEmail": {
+                                    "type": "string"
+                                },
+                                "CreatedById": {
+                                    "type": "string"
+                                },
+                                "CreatedByUPN": {
+                                    "type": "string"
+                                },
+                                "CreatedOnDate": {
+                                    "type": "string"
+                                },
+                                "DataAssetTechnicalInformation": {
+                                    "type": "string"
+                                },
+                                "DataClassificationLevel": {
+                                    "type": "string"
+                                },
+                                "DataOwner": {
+                                    "type": "string"
+                                },
+                                "DataOwnerEmail": {
+                                    "type": "string"
+                                },
+                                "DataOwnerObjID": {
+                                    "type": "string"
+                                },
+                                "DataOwnerUPN": {
+                                    "type": "string"
+                                },
+                                "DataSchema": {
+                                    "type": "string"
+                                },
+                                "DataSourceNameFriendly": {
+                                    "type": "string"
+                                },
+                                "DataSourceNameSystem": {
+                                    "type": "string"
+                                },
+                                "Description": {
+                                    "type": "string"
+                                },
+                                "EditedBy": {},
+                                "EditedByEmail": {},
+                                "EditedById": {},
+                                "EditedByUPN": {},
+                                "EngineeringContact": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactEmail": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactObjID": {
+                                    "type": "string"
+                                },
+                                "EngineeringContactUPN": {
+                                    "type": "string"
+                                },
+                                "ID": {
+                                    "type": "integer"
+                                },
+                                "InactiveDate": {
+                                    "type": "string"
+                                },
+                                "Metadata": {
+                                    "type": "string"
+                                },
+                                "Pattern": {
+                                    "type": "string"
+                                },
+                                "PublisherName": {
+                                    "type": "string"
+                                },
+                                "Restrictions": {
+                                    "type": "string"
+                                },
+                                "SME": {
+                                    "type": "string"
+                                },
+                                "SourceSystem": {
+                                    "type": "string"
+                                },
+                                "SubjectArea": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "ID",
+                                "ContractID",
+                                "SubjectArea",
+                                "SourceSystem",
+                                "PublisherName",
+                                "DataSourceNameSystem",
+                                "DataSourceNameFriendly",
+                                "Description",
+                                "BusinessContact",
+                                "BusinessContactEmail",
+                                "BusinessContactUPN",
+                                "BusinessContactObjID",
+                                "EngineeringContact",
+                                "EngineeringContactEmail",
+                                "EngineeringContactUPN",
+                                "EngineeringContactObjID",
+                                "DataOwner",
+                                "DataOwnerEmail",
+                                "DataOwnerUPN",
+                                "DataOwnerObjID",
+                                "SME",
+                                "Restrictions",
+                                "Metadata",
+                                "DataClassificationLevel",
+                                "CreatedBy",
+                                "CreatedByEmail",
+                                "CreatedByUPN",
+                                "CreatedById",
+                                "DataSchema",
+                                "CreatedOnDate",
+                                "Active",
+                                "ActiveDate",
+                                "InactiveDate",
+                                "ControlTableID",
+                                "Pattern",
+                                "EditedBy",
+                                "EditedByEmail",
+                                "EditedById",
+                                "EditedByUPN",
+                                "DataAssetTechnicalInformation"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Execute_stored_procedure": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

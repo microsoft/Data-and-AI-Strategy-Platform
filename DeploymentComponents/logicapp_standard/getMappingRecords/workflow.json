@@ -1,0 +1,80 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT  Distinct\nId\n,sinkdbTableName as Mapping\n,BusinessUseCase as [Business Use Case]\n,createdby as [Submitted By]\n,TimeStamp as [Submitted On]\n,active\nFROM [dbo].[DataMapping]\nGroup by id,sinkdbTableName,BusinessUseCase,active,createdby,TimeStamp\n"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_query')?[0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Business Use Case": {
+                                    "type": "string"
+                                },
+                                "Mapping": {
+                                    "type": "string"
+                                },
+                                "Submitted By": {
+                                    "type": "string"
+                                },
+                                "Submitted On": {
+                                    "type": "string"
+                                },
+                                "active": {
+                                    "type": "boolean"
+                                },
+                                "id": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "Mapping",
+                                "Business Use Case",
+                                "Submitted By",
+                                "Submitted On",
+                                "active"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Execute_query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {},
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

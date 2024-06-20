@@ -1,0 +1,122 @@
+{
+    "name": "df_AllDataTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "source1"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "AllDataTaxModel"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          ID as short,",
+                "          TypeIdentifier as string,",
+                "          Name as string,",
+                "          NTaxpayers as string,",
+                "          NReturn as string,",
+                "          NIssues as string,",
+                "          NReturnsProcessed as string,",
+                "          NReturnsAccepted as string,",
+                "          NMonthlyDelayedPayments as string,",
+                "          Penaltycollected as string,",
+                "          PenaltyTarget as string,",
+                "          InterestCollected as string,",
+                "          InterestTarget as string,",
+                "          NTaxpayersReportedtoLawEnforcement as string,",
+                "          NPotentialAnomalies as string,",
+                "          TaxIssues as string,",
+                "          UnderaymentrDelayedPayments as string,",
+                "          Penalties_YTD as string,",
+                "          InterestCollected_YTD as string,",
+                "          NReturnsScrutiny as string,",
+                "          {NAuditedReportsClosedWithPenaltyLessThan$1000} as string,",
+                "          NTaxpayersUnderScrutiny as string,",
+                "          InternalRiskandCompliance as string,",
+                "          NTaxpayersReportedtoLawEnforcement1 as string,",
+                "          {# of cases with potential fraudâ€‹} as string,",
+                "          {# of cases still under scrutinyÂ â€‹} as string,",
+                "          {Potential fraud detectedâ€‹} as string,",
+                "          {# of employees reported to LEâ€‹} as string,",
+                "          {Dues collectedâ€‹} as string,",
+                "          {Penalties collectedâ€‹} as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> source1",
+                "source1 select(mapColumn(",
+                "          ID,",
+                "          TypeIdentifier,",
+                "          Name,",
+                "          NTaxpayers,",
+                "          NReturn,",
+                "          NIssues,",
+                "          NReturnsProcessed,",
+                "          NReturnsAccepted,",
+                "          NMonthlyDelayedPayments,",
+                "          Penaltycollected,",
+                "          PenaltyTarget,",
+                "          InterestCollected,",
+                "          InterestTarget,",
+                "          NTaxpayersReportedtoLawEnforcement,",
+                "          NPotentialAnomalies,",
+                "          TaxIssues,",
+                "          UnderaymentrDelayedPayments,",
+                "          Penalties_YTD,",
+                "          InterestCollected_YTD,",
+                "          NReturnsScrutiny,",
+                "          NAuditedReportsClosedWithPenaltyLessThanThousand = {NAuditedReportsClosedWithPenaltyLessThan$1000},",
+                "          NTaxpayersUnderScrutiny,",
+                "          InternalRiskandCompliance,",
+                "          NTaxpayersReportedtoLawEnfor = NTaxpayersReportedtoLawEnforcement1,",
+                "          Nofcaseswithpotentialfraud = {# of cases with potential fraudâ€‹},",
+                "          Nofcasesstillunderscrutiny = {# of cases still under scrutinyÂ â€‹},",
+                "          Potentialfrauddetected = {Potential fraud detectedâ€‹},",
+                "          NofemployeesreportedtoLE = {# of employees reported to LEâ€‹},",
+                "          Duescollected = {Dues collectedâ€‹},",
+                "          Penaltiescollected = {Penalties collectedâ€‹}",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'AllData') ~> AllDataTaxModel"
+            ]
+        }
+    }
+}

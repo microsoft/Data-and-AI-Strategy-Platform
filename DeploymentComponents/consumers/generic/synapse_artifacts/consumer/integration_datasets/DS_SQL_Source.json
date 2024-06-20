@@ -1,0 +1,19 @@
+{
+    "name": "DS_SQL_Source",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_SQL_Source",
+            "type": "LinkedServiceReference"
+        },
+        "folder": {
+            "name": "SQL"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "IngestedLandingDataAudit"
+        }
+    }
+}

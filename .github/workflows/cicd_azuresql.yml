@@ -1,0 +1,156 @@
+# This is a basic workflow to help you get started with Actions
+
+name: cicd-azuresql
+
+# Controls when the workflow will run
+on:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      DeploymemtEnvironments:
+        description: 'Deploy To Which Environments'
+        required: true 
+        type: choice
+        options: 
+          - test
+          - prod
+          - test and prod
+
+permissions:
+  id-token: write
+  contents: read
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  deploy-to-test-azuresql:
+    if: ${{ inputs.DeploymemtEnvironments == 'test' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: test
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $azureSQLServerNameDev = $json_data.azureSQLServerName
+          "azureSQLServerNameDev=$azureSQLServerNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_test.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Extract DACPAC
+      - name: Extract DACPAC
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $AccessToken_Object = (Get-AzAccessToken -Resource "https://database.windows.net/")
+            $AccessToken = $AccessToken_Object.Token
+
+            SqlPackage /at:$AccessToken /Action:Extract /TargetFile:"./${{ env.azureSQLServerNameDev }}.dacpac" \
+                /SourceConnectionString:"Server=tcp:${{ env.azureSQLServerNameDev }}.database.windows.net,1433;Initial Catalog=${{ env.azureSQLServerDBName }};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+          azPSVersion: "latest"
+
+      - name: Azure SQL DB Dacpac Deploy
+        uses: Azure/sql-action@v2.2.1
+        with:
+          # The connection string, including authentication information, for the Azure SQL Database.
+          connection-string: 'Server=${{ env.azureSQLServerName }}.database.windows.net; Initial Catalog=${{ env.azureSQLServerDBName }}; Authentication=Active Directory Default' 
+          # Path to the dacpac file in the artifact
+          path: './${{ env.azureSQLServerName }}.dacpac'
+          # Action we want it to do, in this case 'Publish' the contents of the dacpac to the database
+          action: 'publish'
+          arguments: '/p:DropObjectsNotInSource=true'   # Optional properties parameters for SqlPackage Publish
+
+  deploy-to-prod-azuresql:
+    if: ${{ inputs.DeploymemtEnvironments == 'prod' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: production
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $azureSQLServerNameDev = $json_data.azureSQLServerName
+          "azureSQLServerNameDev=$azureSQLServerNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_prod.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Extract DACPAC
+      - name: Extract DACPAC
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            $AccessToken_Object = (Get-AzAccessToken -Resource "https://database.windows.net/")
+            $AccessToken = $AccessToken_Object.Token
+
+            SqlPackage /at:$AccessToken /Action:Extract /TargetFile:"./${{ env.azureSQLServerNameDev }}.dacpac" \
+                /SourceConnectionString:"Server=tcp:${{ env.azureSQLServerNameDev }}.database.windows.net,1433;Initial Catalog=${{ env.azureSQLServerDBName }};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+          azPSVersion: "latest"
+
+      - name: Azure SQL DB Dacpac Deploy
+        uses: Azure/sql-action@v2.2.1
+        with:
+          # The connection string, including authentication information, for the Azure SQL Database.
+          connection-string: 'Server=${{ env.azureSQLServerName }}.database.windows.net; Initial Catalog=${{ env.azureSQLServerDBName }}; Authentication=Active Directory Default' 
+          # Path to the dacpac file in the artifact
+          path: './${{ env.azureSQLServerName }}.dacpac'
+          # Action we want it to do, in this case 'Publish' the contents of the dacpac to the database
+          action: 'publish'
+          arguments: '/p:DropObjectsNotInSource=true'   # Optional properties parameters for SqlPackage Publish
+

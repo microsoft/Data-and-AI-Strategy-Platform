@@ -1,0 +1,334 @@
+{
+    "name": "PL_Synapse_Ml_Pipeline",
+    "properties": {
+        "description": "The Synapse ML orchestration triggering the Azure ML pipeline together with the Azure ML (v1) pipeline",
+        "activities": [
+            {
+                "name": "Data-Processing",
+                "description": "The data processing Synapse notebook performing data processing and featurization in preparing for Azure ML pipeline",
+                "type": "SynapseNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "VAT-Daily-Dataflow",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": "data-processing",
+                        "type": "NotebookReference"
+                    },
+                    "snapshot": true,
+                    "sparkPool": {
+                        "referenceName": "defaultSpark33",
+                        "type": "BigDataPoolReference"
+                    },
+                    "executorSize": null,
+                    "conf": {
+                        "spark.dynamicAllocation.enabled": null,
+                        "spark.dynamicAllocation.minExecutors": null,
+                        "spark.dynamicAllocation.maxExecutors": null
+                    },
+                    "driverSize": null,
+                    "numExecutors": null
+                }
+            },
+            {
+                "name": "Data-Process-Error",
+                "description": "Use to capture exceptions in 'data-processing' notebook",
+                "type": "AppendVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Data-Processing",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "data_processing_error",
+                    "value": {
+                        "value": "@concat('Pipeline output contains error from ', activity('Data-Processing').output)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Data-Drift",
+                "description": "The data drift Synapse notebook performing statistical data drift of input data frames and transferring flag to the Azure ML pipeline",
+                "type": "SynapseNotebook",
+                "dependsOn": [
+                    {
+                        "activity": "Data-Processing",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "notebook": {
+                        "referenceName": "data-drift",
+                        "type": "NotebookReference"
+                    },
+                    "parameters": {
+                        "data_quality_pass": {
+                            "value": {
+                                "value": "@activity('Data-Processing').output.status.Output.result.exitValue",
+                                "type": "Expression"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "snapshot": true,
+                    "sparkPool": {
+                        "referenceName": "defaultSpark33",
+                        "type": "BigDataPoolReference"
+                    },
+                    "executorSize": null,
+                    "conf": {
+                        "spark.dynamicAllocation.enabled": null,
+                        "spark.dynamicAllocation.minExecutors": null,
+                        "spark.dynamicAllocation.maxExecutors": null
+                    },
+                    "driverSize": null,
+                    "numExecutors": null
+                }
+            },
+            {
+                "name": "Data-Drift-Error",
+                "description": "Use to capture exceptions in 'data-drift' notebook",
+                "type": "AppendVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Data-Drift",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "data_processing_error",
+                    "value": {
+                        "value": "@concat('Pipeline output contains error from ', activity('Data-Drift').output)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Pipeline-trigger",
+                "description": "A conditional process to trigger the Azure ML pipeline (v1)",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Data-Drift",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(equals(activity('Data-Drift').output.status.Output.result.exitValue, 'train'), equals(activity('Data-Drift').output.status.Output.result.exitValue, 'inference' ))",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Data-Error",
+                            "description": "Functional error occurring in 'data-processing' notebook",
+                            "type": "AppendVariable",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "data_processing_error",
+                                "value": {
+                                    "value": "@concat('Pipeline dataframe returned an exit value of: ', activity('Data-Processing').output.status.Output.result.exitValue)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "ML-Pipeline",
+                            "description": "The Azure ML pipeline used to perform further data processing, ml modelling and output",
+                            "type": "AzureMLExecutePipeline",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "mlPipelineParameters": {
+                                    "Datastore where raw files are located": "ds_adls_raw/Tax/Undefined/Temp/v1/full/2022/10/05/temp.csv",
+                                    "train_or_inference": {
+                                        "value": "@activity('Data-Processing').output.status.Output.result.exitValue",
+                                        "type": "Expression"
+                                    }
+                                },
+                                "mlPipelineId": "0f1b9e0b-0c4b-42fa-a005-1509ebac3654"
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_MachineLearningWorkspace",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "serve",
+                "description": "Data preparation for the serve container",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "Pipeline-trigger",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "AzureBlobFSReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "AzureBlobFSWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "quoteAllText": true,
+                            "fileExtension": ".csv"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "DS_ADLS_VAT_Tax_Daily_Score",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "DS_ADLS_VAT_Tax_Serve",
+                        "type": "DatasetReference"
+                    }
+                ]
+            },
+            {
+                "name": "VAT-Daily-Dataflow",
+                "description": "Extracts the Vat daily data from 'curated' container and process it into 'staging' container",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_VATDaily",
+                        "type": "DataFlowReference"
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "Data-Flow-Error",
+                "description": "Use to capture exceptions in 'data-flow' process",
+                "type": "AppendVariable",
+                "dependsOn": [
+                    {
+                        "activity": "VAT-Daily-Dataflow",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "data_processing_error",
+                    "value": {
+                        "value": "@concat('Pipeline output contains error from ', activity('VAT-Daily-Dataflow').output)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "variables": {
+            "data_processing_error": {
+                "type": "Array"
+            },
+            "data_drift_error": {
+                "type": "String"
+            },
+            "data_flow_error": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "synapse-ml-pipeline"
+        },
+        "annotations": [],
+        "lastPublishTime": "2022-10-24T06:22:32Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

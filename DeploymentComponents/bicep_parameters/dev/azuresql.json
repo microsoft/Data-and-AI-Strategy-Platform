@@ -1,0 +1,30 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "restrictOutboundNetworkAccess": {
+      "value": "Enabled"
+    },
+    "minimalTlsVersion": {
+      "value": "1.2"
+    },
+    "maxSizeBytes": {
+      "value": 2147483648
+    },
+    "requestedBackupStorageRedundancy": {
+      "value": "Zone"
+    },
+    "databaseCollation": {
+      "value": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "catalogCollation": {
+      "value": "DATABASE_DEFAULT"
+    },
+    "enableAuditLogging": {
+      "value": true
+    }
+  }
+}

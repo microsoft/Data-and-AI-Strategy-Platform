@@ -1,0 +1,26 @@
+{
+    "name": "DS_M365",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_M365",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "tableName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "IngestionSources"
+        },
+        "annotations": [],
+        "type": "Office365Table",
+        "schema": [],
+        "typeProperties": {
+            "tableName": {
+                "value": "@dataset().tableName",
+                "type": "Expression"
+            }
+        }
+    }
+}

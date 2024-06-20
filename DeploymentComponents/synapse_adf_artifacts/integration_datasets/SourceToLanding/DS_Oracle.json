@@ -1,0 +1,42 @@
+{
+    "name": "DS_Oracle",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Oracle",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "keyVaultSecretName": {
+                    "value": "@dataset().keyVaultSecretName",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "schemaName": {
+                "type": "string"
+            },
+            "tableName": {
+                "type": "string"
+            },
+            "keyVaultSecretName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "IngestionSources"
+        },
+        "annotations": [],
+        "type": "OracleTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schemaName",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().tableName",
+                "type": "Expression"
+            }
+        }
+    }
+}

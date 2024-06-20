@@ -1,0 +1,61 @@
+{
+
+    "AllowAccessToIpRange": false,
+    "IpRangeCidr": "0.0.0.0",
+    "IpRangeStart": "0.0.0.0",
+    "IpRangeEnd": "0.0.0.0",
+
+    "DeployNewVnet": false,
+    "NewVnetAddressSpace": "",
+
+    "VnetForResourcesRgName": "",
+    "VnetForResourcesName": "",
+
+    "DeployLogicAppInVnet": true,
+    "LogicAppSubnetName": "",
+    
+    "DeployMLWorkspaceInManagedVnet": false,
+    "DeployMLWorkspaceInCustomerVnet": true,
+    "MLComputeSubnetName": "",
+
+    "DeployDatabricksInVnet": true,
+    "VnetForDatabricksRgName": "",
+    "VnetForDatabricksName": "",
+    "DatabricksPublicSubnetName": "publicSubnet",
+    "DatabricksPrivateSubnetName": "privateSubnet",
+
+    "VnetForDatabricksTransitSubscriptionId": "{VnetForDatabricksTransitSubscriptionId}",
+    "VnetForDatabricksTransitRgName": "",
+    "VnetForDatabricksTransitName": "",
+    "DatabricksTransitPESubnetName": "default",
+
+    "DeployOpenAiDemoAppInVnet": true,
+    "OpenAiDemoAppSubnetName": "openAiDemoAppSubnet",
+
+    "CreatePrivateEndpoints": true,
+    "CreatePrivateEndpointsInSameRgAsResource": true,
+    "UseManualPrivateLinkServiceConnections": false,
+
+    "VnetforPrivateEndpointsRgName": "",
+    "VnetforPrivateEndpointsName": "",
+    "PrivateEndpointSubnetName": "AzurePaasResources",
+
+    "PrivateEndpointId": "dev",
+
+    "CreateNewPrivateDNSZones": false,
+    "PrivateDNSZoneRgName": "",
+
+    "DeployADFPortalPrivateEndpoint": true,
+    "DeploySynapseWebPrivateEndpoint": false,
+    "DeployPurviewPrivateEndpoints": true,
+    "DeployPurviewIngestionPrivateEndpoints": true,
+
+    "RedeploymentAfterNetworkingIsSetUp": false,
+
+    "DeployVMswithBastion": false,
+    "JumpBoxSubnetName": "jumpbox",
+    "vmsPerEnv": 2,
+    "vmName": "",
+    "bastionName": ""
+
+}

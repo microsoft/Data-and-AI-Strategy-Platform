@@ -1,0 +1,95 @@
+{
+    "name": "df_invoiceload_taxpayer_fromStaging",
+    "properties": {
+        "description": "Maps data to the customer Table. Stores the TaxPayer ID from the Invoice.",
+        "folder": {
+            "name": "df_LakeDBLoad/OperationalMapped"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "Taxpayer"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "TaxpayerDB"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "surrogateKeyCustomerID"
+                },
+                {
+                    "name": "DistinctRows"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(output(",
+                "          TaxpayerId as string,",
+                "          OriginalTaxpayerID as string,",
+                "          TaxpayerEstablishedDate as string,",
+                "          TaxpayerTypeId as string,",
+                "          ResponsibilityCenterId as string,",
+                "          LedgerId as string,",
+                "          LedgerAccountNumber as string,",
+                "          Note as string,",
+                "          PartyId as string,",
+                "          GlobalLocationNumber as string,",
+                "          LegalEntityName as string,",
+                "          LegalEntityStateRegistration as string,",
+                "          StateOfLegalEntityResidence as string,",
+                "          LegalEntityMunicipality as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['EnterpriseTaxModel/Taxpayer/*']) ~> Taxpayer",
+                "DistinctRows keyGenerate(output(TaxpayerID as long),",
+                "     startAt: 1L,",
+                "     stepValue: 1L) ~> surrogateKeyCustomerID",
+                "filter1 aggregate(groupBy(mycols = sha2(256,columns())),",
+                "     each(match(true()), $$ = first($$))) ~> DistinctRows",
+                "Taxpayer filter(not(isNull(OriginalTaxpayerID))) ~> filter1",
+                "surrogateKeyCustomerID select(mapColumn(",
+                "          TaxpayerId = surrogateKeyCustomerID@TaxpayerID,",
+                "          OriginalTaxpayerID,",
+                "          TaxpayerEstablishedDate,",
+                "          TaxpayerTypeId,",
+                "          ResponsibilityCenterId,",
+                "          LedgerId,",
+                "          LedgerAccountNumber,",
+                "          Note,",
+                "          PartyId,",
+                "          GlobalLocationNumber,",
+                "          LegalEntityName,",
+                "          LegalEntityStateRegistration,",
+                "          StateOfLegalEntityResidence,",
+                "          LegalEntityMunicipality",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'EnterpriseTaxModel',",
+                "     tableName: 'Taxpayer') ~> TaxpayerDB"
+            ]
+        }
+    }
+}

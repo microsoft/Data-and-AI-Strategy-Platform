@@ -1,0 +1,66 @@
+{
+    "name": "df_InvoiceDetailsTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "InvoiceDetail"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "InvoiceDetailTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          {Reporting Month} as string,",
+                "          {Invoice Number} as string,",
+                "          {Invoice Date} as string,",
+                "          TaxpayerID as string,",
+                "          {Sold-To State} as string,",
+                "          TaxableAmount as double,",
+                "          TaxAmount as double,",
+                "          {SKU Number} as string,",
+                "          Sector as string,",
+                "          FlaggedproductCategory as boolean,",
+                "          TaxAnomaliesTypes as string,",
+                "          VATTarget as double",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> InvoiceDetail",
+                "InvoiceDetail sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'InvoiceDetails') ~> InvoiceDetailTAXModel"
+            ]
+        }
+    }
+}

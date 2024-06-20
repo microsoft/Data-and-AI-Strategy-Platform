@@ -1,0 +1,576 @@
+{
+    "name": "PL_2_Process_Landed_Files_Step3",
+    "properties": {
+        "activities": [
+            {
+                "name": "Data Movement",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.copyBehavior",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "Unzip_Zip_Folder",
+                            "activities": [
+                                {
+                                    "name": "Unzip Zip Folder",
+                                    "type": "Copy",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "7.00:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "BinarySource",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSReadSettings",
+                                                "recursive": true
+                                            },
+                                            "formatSettings": {
+                                                "type": "BinaryReadSettings",
+                                                "compressionProperties": {
+                                                    "type": "ZipDeflateReadSettings",
+                                                    "preserveZipFileNameAsFolder": false
+                                                }
+                                            }
+                                        },
+                                        "sink": {
+                                            "type": "BinarySink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Zip_File",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.sourceContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@pipeline().parameters.folderPathNoContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "fileName": {
+                                                    "value": "@pipeline().parameters.sourceFile",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Landing_Binary_Folder",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.sourceContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@concat(pipeline().parameters.folderPathNoContainer\n,replace(pipeline().parameters.sourceFile,'.','_'),'/')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Set Output Folder",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Unzip Zip Folder",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFolderPath",
+                                        "value": {
+                                            "value": "@concat(pipeline().parameters.folderPathNoContainer\n,replace(pipeline().parameters.sourceFile,'.','_'),'/')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Set Output File Name",
+                                    "description": "",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Set Output Folder",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFileName",
+                                        "value": "One or More Files"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Extract_Excel_Sheets",
+                            "activities": [
+                                {
+                                    "name": "Set Output Folder Excel",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Extract Excel Sheets",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFolderPath",
+                                        "value": {
+                                            "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Set Output File Name Excel",
+                                    "description": "",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Set Output Folder Excel",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFileName",
+                                        "value": "One or More Files"
+                                    }
+                                },
+                                {
+                                    "name": "Extract Excel Sheets",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "PL_2a_Excel_Extraction_DataFlow",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "fileName": {
+                                                "value": "@pipeline().parameters.sourceFile",
+                                                "type": "Expression"
+                                            },
+                                            "folderPath": {
+                                                "value": "@pipeline().parameters.folderPathNoContainer",
+                                                "type": "Expression"
+                                            },
+                                            "sheetConfig": {
+                                                "value": "@pipeline().parameters.CopySourceSettings",
+                                                "type": "Expression"
+                                            },
+                                            "container": {
+                                                "value": "@pipeline().parameters.sourceContainer",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Form_Recognizer_Extraction",
+                            "activities": [
+                                {
+                                    "name": "Form Recognizer Execution",
+                                    "type": "SynapseNotebook",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "notebook": {
+                                            "referenceName": {
+                                                "value": "NB_FormRecognizer",
+                                                "type": "Expression"
+                                            },
+                                            "type": "NotebookReference"
+                                        },
+                                        "parameters": {
+                                            "folderpath": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.folderPathNoContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "string"
+                                            },
+                                            "filename": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.sourceFile",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "string"
+                                            },
+                                            "model": {
+                                                "value": {
+                                                    "value": "@json(pipeline().parameters.CopySourceSettings).model",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "string"
+                                            }
+                                        },
+                                        "sparkPool": {
+                                            "referenceName": {
+                                                "value": "defaultSpark33",
+                                                "type": "Expression"
+                                            },
+                                            "type": "BigDataPoolReference"
+                                        },
+                                        "conf": {
+                                            "spark.dynamicAllocation.enabled": false
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_Synapse",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                },
+                                {
+                                    "name": "Set Output Folder_formRecognizer",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Form Recognizer Execution",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFolderPath",
+                                        "value": {
+                                            "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Set Output File Name_formRecognizer",
+                                    "description": "",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Set Output Folder_formRecognizer",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "outputFileName",
+                                        "value": {
+                                            "value": "@concat(\nsplit(pipeline().parameters.sourceFile,'.')[0]\n,'_formrecognizeroutput.csv')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Copy to Raw Needed",
+                "description": "If Data still needs to move to raw",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Data Movement",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(pipeline().parameters.copyBehavior,'Copy_to_Raw')",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Add Logging Record",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                                "storedProcedureParameters": {
+                                    "source_filename": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.sourceFile",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_folderpath": {
+                                        "value": {
+                                            "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "source_file_md5_hash": {
+                                        "value": {
+                                            "value": "@coalesce(pipeline().parameters.md5Hash,'N/A')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "ignoredStatus": {
+                                        "value": "Not Ignored",
+                                        "type": "String"
+                                    },
+                                    "duplicateStatus": {
+                                        "value": "Not Duplicate",
+                                        "type": "String"
+                                    },
+                                    "destination_filename": {
+                                        "value": {
+                                            "value": "@variables('outputFileName')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "destination_folderpath": {
+                                        "value": {
+                                            "value": "@variables('outputFolderPath')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "ingestion_status": {
+                                        "value": "Processed",
+                                        "type": "String"
+                                    },
+                                    "pipeline_trigger": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.triggerName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "id_to_update": {
+                                        "value": {
+                                            "value": "@pipeline().parameters.loggingTableId",
+                                            "type": "Expression"
+                                        },
+                                        "type": "Int32"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_SQL_MetadataControl",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Step 4 Pipeline",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_2_Process_Landed_Files_Step4",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "sourceFolder": {
+                                        "value": "@pipeline().parameters.sourceFolder",
+                                        "type": "Expression"
+                                    },
+                                    "sourceFile": {
+                                        "value": "@pipeline().parameters.sourceFile",
+                                        "type": "Expression"
+                                    },
+                                    "md5Hash": {
+                                        "value": "@pipeline().parameters.md5Hash",
+                                        "type": "Expression"
+                                    },
+                                    "loggingTableId": {
+                                        "value": "@pipeline().parameters.loggingTableId",
+                                        "type": "Expression"
+                                    },
+                                    "folderPathNoContainer": {
+                                        "value": "@pipeline().parameters.folderPathNoContainer",
+                                        "type": "Expression"
+                                    },
+                                    "sourceContainer": {
+                                        "value": "@pipeline().parameters.sourceContainer",
+                                        "type": "Expression"
+                                    },
+                                    "sinkContainer": {
+                                        "value": "@pipeline().parameters.sinkContainer",
+                                        "type": "Expression"
+                                    },
+                                    "CopySourceSettings": {
+                                        "value": "@pipeline().parameters.CopySourceSettings",
+                                        "type": "Expression"
+                                    },
+                                    "controlTableId": {
+                                        "value": "@pipeline().parameters.controlTableId",
+                                        "type": "Expression"
+                                    },
+                                    "sinkFolderPath": {
+                                        "value": "@pipeline().parameters.sinkFolderPath",
+                                        "type": "Expression"
+                                    },
+                                    "loadType": {
+                                        "value": "@json(pipeline().parameters.loadType).loadType",
+                                        "type": "Expression"
+                                    },
+                                    "triggerName": {
+                                        "value": "@pipeline().parameters.triggerName",
+                                        "type": "Expression"
+                                    },
+                                    "DataContract": {
+                                        "value": "@pipeline().parameters.DataContract",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string"
+            },
+            "copyBehavior": {
+                "type": "string"
+            },
+            "md5Hash": {
+                "type": "string"
+            },
+            "loggingTableId": {
+                "type": "string"
+            },
+            "folderPathNoContainer": {
+                "type": "string"
+            },
+            "sourceContainer": {
+                "type": "string"
+            },
+            "sinkContainer": {
+                "type": "string"
+            },
+            "CopySourceSettings": {
+                "type": "string"
+            },
+            "controlTableId": {
+                "type": "string"
+            },
+            "sinkFolderPath": {
+                "type": "string"
+            },
+            "loadType": {
+                "type": "string"
+            },
+            "triggerName": {
+                "type": "string"
+            },
+            "DataContract": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "outputFileName": {
+                "type": "String"
+            },
+            "outputFolderPath": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-02-06T05:52:12Z"
+    }
+}

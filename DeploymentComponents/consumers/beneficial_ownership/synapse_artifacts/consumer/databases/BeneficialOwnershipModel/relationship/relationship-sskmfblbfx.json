@@ -1,0 +1,26 @@
+{
+	"name": "relationship-sskmfblbfx",
+	"properties": {
+		"Name": "relationship-sskmfblbfx",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "EntityWeight",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 2,
+		"ObjectId": "23d1ba56-f251-4f08-aaca-90a629f3be1a"
+	},
+	"type": "RELATIONSHIP"
+}

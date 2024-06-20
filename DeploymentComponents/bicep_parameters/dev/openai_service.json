@@ -1,0 +1,42 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "kind": {
+        "value": "OpenAI"
+      },
+      "disableLocalAuth": {
+        "value": false
+      },
+      "deployments": {
+        "value": [
+          {
+            "name": "chatGpt35Turbo0613",
+            "model": {
+              "format": "OpenAI",
+              "name": "gpt-35-turbo",
+              "version": "0613"
+            },
+            "sku": {
+              "name": "Standard",
+              "capacity": "30"
+            }
+          },
+          {
+            "name": "textEmbeddingAda002",
+            "model": {
+              "format": "OpenAI",
+              "name": "text-embedding-ada-002",
+              "version": "2"
+            },
+            "sku": {
+              "name": "Standard",
+              "capacity": "30"
+            }
+          }
+        ]
+      }
+    }
+  }

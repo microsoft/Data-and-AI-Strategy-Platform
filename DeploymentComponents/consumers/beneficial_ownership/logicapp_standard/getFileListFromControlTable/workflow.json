@@ -1,0 +1,78 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT DISTINCT [id]\n      ,[source_id]\n      ,[raw_filename]\n      ,[raw_folderpath]\n  FROM [dbo].[ControlTable]\n  WHERE [raw_filename] LIKE '%.%'\n  AND [raw_folderpath] LIKE 'raw/BeneficialOwnership/%'\n  --AND [processed] IS NOT NULL"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Execute_query')[0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "processed": {},
+                                "processed_datetime_utc": {},
+                                "processed_to_raw_datetime_utc": {
+                                    "type": "string"
+                                },
+                                "raw_filename": {
+                                    "type": "string"
+                                },
+                                "raw_folderpath": {
+                                    "type": "string"
+                                },
+                                "source_id": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "source_id",
+                                "raw_filename",
+                                "raw_folderpath",
+                                "processed_to_raw_datetime_utc",
+                                "processed",
+                                "processed_datetime_utc"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "http",
+                "runAfter": {
+                    "Execute_query": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {},
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

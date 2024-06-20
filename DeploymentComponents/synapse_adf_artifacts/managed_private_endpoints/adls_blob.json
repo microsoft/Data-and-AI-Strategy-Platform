@@ -1,0 +1,6 @@
+{
+    "properties": {
+        "privateLinkResourceId": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Storage/storageAccounts/storageAccountName",
+        "groupId": "blob"
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "name": "GetLoggingUpdates",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "PL_GetLoggingUpdates",
+                    "type": "PipelineReference"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Hour",
+                "interval": 1,
+                "startTime": "2023-01-05T05:26:00Z",
+                "timeZone": "UTC"
+            }
+        }
+    }
+}

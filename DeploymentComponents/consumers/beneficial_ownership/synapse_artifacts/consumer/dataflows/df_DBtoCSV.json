@@ -1,0 +1,389 @@
+{
+    "name": "df_DBtoCSV",
+    "properties": {
+        "folder": {
+            "name": "BeneficialOwnership/df_Mapping"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "name": "Activity"
+                },
+                {
+                    "name": "Contact"
+                },
+                {
+                    "name": "Ownership"
+                },
+                {
+                    "name": "AttributeDefinition"
+                },
+                {
+                    "name": "EntityWeight"
+                },
+                {
+                    "name": "RedFlagDefinition"
+                },
+                {
+                    "name": "EntityRedFlag"
+                },
+                {
+                    "name": "ContactFilter"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink3"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink4"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink5"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink6"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink7"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink8"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "sink9"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "lookup1"
+                },
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "join1"
+                },
+                {
+                    "name": "join2"
+                },
+                {
+                    "name": "select2"
+                },
+                {
+                    "name": "select3"
+                },
+                {
+                    "name": "aggregate2"
+                },
+                {
+                    "name": "select4"
+                },
+                {
+                    "name": "aggregate3"
+                },
+                {
+                    "name": "select5"
+                }
+            ],
+            "scriptLines": [
+                "parameters{",
+                "     contact_threshold as string ('40')",
+                "}",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string,",
+                "          TimePeriod as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'Activity') ~> Activity",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'Contact') ~> Contact",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'Ownership') ~> Ownership",
+                "source(output(",
+                "          AttributeID as string,",
+                "          Name as string,",
+                "          Description as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'AttributeDefinition') ~> AttributeDefinition",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'EntityWeight') ~> EntityWeight",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'RedFlagDefinition') ~> RedFlagDefinition",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'EntityRedFlag') ~> EntityRedFlag",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'BeneficialOwnershipModel',",
+                "     tableName: 'Contact') ~> ContactFilter",
+                "ContactFilter aggregate(groupBy(Value),",
+                "     counter = count(EntityID)) ~> aggregate1",
+                "aggregate1 filter(counter <= toInteger($contact_threshold)) ~> filter1",
+                "filter1, Contact lookup(aggregate1@Value == Contact@Value,",
+                "     multiple: false,",
+                "     pickup: 'any',",
+                "     broadcast: 'auto')~> lookup1",
+                "lookup1 select(mapColumn(",
+                "          EntityID",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "Contact, select1 join(Contact@EntityID == select1@EntityID,",
+                "     joinType:'inner',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join1",
+                "Ownership, select1 join(Ownership@EntityID == select1@EntityID,",
+                "     joinType:'inner',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join2",
+                "join2 select(mapColumn(",
+                "          EntityID = Ownership@EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select2",
+                "join1 select(mapColumn(",
+                "          EntityID = Contact@EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select3",
+                "select3 aggregate(groupBy(EntityID,",
+                "          AttributeID,",
+                "          Value),",
+                "     count = count()) ~> aggregate2",
+                "aggregate2 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select4",
+                "select2 aggregate(groupBy(EntityID,",
+                "          AttributeID,",
+                "          Value),",
+                "     count = count()) ~> aggregate3",
+                "aggregate3 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select5",
+                "select5 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['ownership.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1),",
+                "     store: 'synapse') ~> sink3",
+                "AttributeDefinition sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['attributedefinition.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink4",
+                "EntityWeight sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['entityweight.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink5",
+                "RedFlagDefinition sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['redflagdefinition.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink6",
+                "EntityRedFlag sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['entityredflag.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink7",
+                "Activity sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['activity.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink8",
+                "select4 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'curated',",
+                "     folderPath: (concat('BeneficialOwnershipModel/',toString(currentDate()))),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:['contact.csv'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     quoteAll: true,",
+                "     partitionBy('hash', 1)) ~> sink9"
+            ]
+        }
+    }
+}

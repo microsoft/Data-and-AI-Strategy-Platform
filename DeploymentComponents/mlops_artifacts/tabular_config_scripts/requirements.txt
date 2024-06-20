@@ -1,0 +1,13 @@
+pandas
+opencensus-ext-azure
+pytest
+pytest-env
+joblib
+scikit-learn
+numpy
+matplotlib
+azureml-core
+azureml-pipeline
+#azureml-defaults
+azure-keyvault-secrets
+azure-identity==1.11.0

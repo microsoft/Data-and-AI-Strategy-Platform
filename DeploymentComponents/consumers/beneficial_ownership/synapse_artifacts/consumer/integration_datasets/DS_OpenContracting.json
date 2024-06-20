@@ -1,0 +1,17 @@
+{
+	"name": "DS_OpenContracting",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ServerlessSQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "stage",
+			"table": "OpenContracting"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

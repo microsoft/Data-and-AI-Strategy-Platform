@@ -1,0 +1,26 @@
+{
+	"name": "relationship-llvruaviju",
+	"properties": {
+		"Name": "relationship-llvruaviju",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "Entity",
+		"ToTableName": "Contact",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "EntityID",
+				"ToColumnName": "EntityID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "01a70e08-b738-4767-949a-7fc7fd2f9709"
+	},
+	"type": "RELATIONSHIP"
+}

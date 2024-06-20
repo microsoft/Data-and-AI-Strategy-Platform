@@ -1,0 +1,250 @@
+{
+	"name": "IndividualCustomer",
+	"properties": {
+		"Name": "IndividualCustomer",
+		"EntityType": "TABLE",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Description": "An 'individual customer' is one of the two types of customers upon which the Microsoft data models focus.      'Legal entity customer' is the other.\n\nThe definition of 'customer' is of critical importance for every organization.    \n\nIt is the customer that is the focus of product planning, marketing, sales, service, reporting and analytics.    Without 'customer' there would be no need for the organization to exist since its purpose is to serve the customer and profit from that interaction.\n\nThe definition of 'customer' must be consistent with how customers exist and interact with the organization in the real world.  \n\nAn artificial or conceptual definition of 'customer' that is not consistent with these two objectives is doomed to fail because the data will not be consistent with the definition and employees will not accept concepts or terms that are not consistent with what they see, know and how they interact with customers on a working basis.\n\nMicrosoft defines 'customer' to meet these objectives.    When we look out into the real world we see two dominant types of customers:  human beings ('individual customers') and legal entities ('legal entity customers')>    \n\nIndividual customers are human beings, male and female individuals, of various ages, sex, demographics and a variety of similar dimensions that describe and define those who purchase products, good and services.    \n\nLegal entities are those legally-defined entities such as corporations, partnerships, non-profit organizations, government organizations etc. that purchase products, goods and services.\n\nThis view of 'customer' is consistent with the real world and consistent with how employees view and interact with customers.\n\nOf course, that is just the start of identifying, defining and understanding each corresponding type of 'customer'.     There is a great deal of detail, complexity and related data that can be used to define each type of customer to various levels of detail and different dimensions of information.    Microsoft implements these detailed concepts and related data via two distinct business area models that expand the coverage and complexity of each type of customer:\n\n-  INDIVIDUAL CUSTOMER Business Area Model\n-  LEGAL ENTITY CUSTOMER Business Area Model\n\nNote:\nEach of the Microsoft models - enterprise, business area or data warehouse - have a representative level of detail for the appropriate type of customer, which is a 'subset' of the total data available in the associated INDIVIDUAL CUSTOMER or LEGAL ENTITY CUSTOMER business area models..   Reference either of those models to expand the coverage or level of detail in each respective data model.\n\nThe actual customer implemented in each model depends upon the dominant use of customer for that industry.     \n\nFor example, in the pharmaceutical industry the customer is a legal entity, which represents another corporation, company, government organization etc. that purchases the pharmaceutical product and then distributes that product to the end-customer, which is an individual in a retail environment or a government-distribution scheme.    \n\nFor this example, the pharmaceutical models will have the legal entity customer represented but not the individual 'end customer' since that is represented in the appropriate retail industry models, which are a different offering.     \n\nOf course, the entire set of data available for a legal entity customer is contained in the associated LEGAL ENTITY CUSTOMER Business Area Model.   Reference the LEGAL ENTITY CUSTOMER Business Area Model to incorporate additional data that may be of relevance.\n\nIn many industries both types of customers are represented since a legal entity or individual can purchase products, goods or services and enter into contracts.    For these industries, both types of customers are represented by some of the more significant or relevant data derived from the associated LEGAL ENTITY or INDIVIDUAL CUSTOMER business area models.   These models can be used to expand the scope or level of detail in any of the enterprise, business area or data warehouse models.",
+		"TableType": "EXTERNAL",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"StorageDescriptor": {
+			"Columns": [
+				{
+					"Name": "CustomerId",
+					"Description": "The unique identifier of a Customer.",
+					"OriginDataTypeName": {
+						"TypeName": "long",
+						"IsComplexType": false,
+						"IsNullable": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "long"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "CustomerId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "OriginalCustomerID",
+					"Description": "Value from import",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 256,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "IndividualCustomerLastName",
+					"Description": "The last name of the Individual Customer.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "IndividualCustomerFirstName",
+					"Description": "The first name of the Individual Customer.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "IndividualCustomerName",
+					"Description": "The name of the Individual Customer.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "IndividualCustomerName"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "IndividualCustomerMiddleName",
+					"Description": "The middle name of the Individual Customer.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "DateOfBirth",
+					"Description": "The date of birth of the individual customer.",
+					"OriginDataTypeName": {
+						"TypeName": "date",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"DateFormat": "YYYY-MM-DD",
+							"HIVE_TYPE_STRING": "date"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "DateOfBirth"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "DateOfDeath",
+					"Description": "The date of death of the individual customer.",
+					"OriginDataTypeName": {
+						"TypeName": "date",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"DateFormat": "YYYY-MM-DD",
+							"HIVE_TYPE_STRING": "date"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "DateOfDeath"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "SexId",
+					"Description": "The unique identifier of a Sex.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "SexId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "GenderId",
+					"Description": "The unique identifier of a Gender.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "GenderId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "EthnicCategoryId",
+					"Description": "The unique identifier of an Ethnic Category.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "EthnicCategoryId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "RacialCategoryId",
+					"Description": "The unique identifier of a Racial Category.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsNullable": true,
+						"IsComplexType": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "IndividualCustomer.cdm.json/IndividualCustomer",
+						"Name": "RacialCategoryId"
+					},
+					"DeltaFormatInvalidMessages": []
+				}
+			],
+			"Format": {
+				"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+				"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+				"FormatType": "parquet",
+				"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+				"Properties": {
+					"path": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/IndividualCustomer",
+					"FormatTypeSetToDatabaseDefault": true
+				}
+			},
+			"Source": {
+				"Provider": "ADLS",
+				"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/IndividualCustomer",
+				"Properties": {
+					"LinkedServiceName": "LS_DataLake",
+					"LocationSetToDatabaseDefault": true
+				}
+			},
+			"Properties": {
+				"textinputformat.record.delimiter": ",",
+				"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+				"derivedModelAttributeInfo": "{\"attributeReferences\":{\"CustomerId\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"CustomerId\"},\"IndividualCustomerName\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"IndividualCustomerName\"},\"DateOfBirth\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"DateOfBirth\"},\"DateOfDeath\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"DateOfDeath\"},\"SexId\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"SexId\"},\"GenderId\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"GenderId\"},\"EthnicCategoryId\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"EthnicCategoryId\"},\"RacialCategoryId\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"RacialCategoryId\"}}}"
+			},
+			"Compressed": false,
+			"IsStoredAsSubdirectories": false
+		},
+		"Properties": {
+			"DerivedModelEntityInfo": "{\"entityDirectives\":{\"name\":\"IndividualCustomer\",\"description\":\"An 'individual customer' is one of the two types of customers upon which the Microsoft data models focus.      'Legal entity customer' is the other.\\n\\nThe definition of 'customer' is of critical importance for every organization.    \\n\\nIt is the customer that is the focus of product planning, marketing, sales, service, reporting and analytics.    Without 'customer' there would be no need for the organization to exist since its purpose is to serve the customer and profit from that interaction.\\n\\nThe definition of 'customer' must be consistent with how customers exist and interact with the organization in the real world.  \\n\\nAn artificial or conceptual definition of 'customer' that is not consistent with these two objectives is doomed to fail because the data will not be consistent with the definition and employees will not accept concepts or terms that are not consistent with what they see, know and how they interact with customers on a working basis.\\n\\nMicrosoft defines 'customer' to meet these objectives.    When we look out into the real world we see two dominant types of customers:  human beings ('individual customers') and legal entities ('legal entity customers')>    \\n\\nIndividual customers are human beings, male and female individuals, of various ages, sex, demographics and a variety of similar dimensions that describe and define those who purchase products, good and services.    \\n\\nLegal entities are those legally-defined entities such as corporations, partnerships, non-profit organizations, government organizations etc. that purchase products, goods and services.\\n\\nThis view of 'customer' is consistent with the real world and consistent with how employees view and interact with customers.\\n\\nOf course, that is just the start of identifying, defining and understanding each corresponding type of 'customer'.     There is a great deal of detail, complexity and related data that can be used to define each type of customer to various levels of detail and different dimensions of information.    Microsoft implements these detailed concepts and related data via two distinct business area models that expand the coverage and complexity of each type of customer:\\n\\n-  INDIVIDUAL CUSTOMER Business Area Model\\n-  LEGAL ENTITY CUSTOMER Business Area Model\\n\\nNote:\\nEach of the Microsoft models - enterprise, business area or data warehouse - have a representative level of detail for the appropriate type of customer, which is a 'subset' of the total data available in the associated INDIVIDUAL CUSTOMER or LEGAL ENTITY CUSTOMER business area models..   Reference either of those models to expand the coverage or level of detail in each respective data model.\\n\\nThe actual customer implemented in each model depends upon the dominant use of customer for that industry.     \\n\\nFor example, in the pharmaceutical industry the customer is a legal entity, which represents another corporation, company, government organization etc. that purchases the pharmaceutical product and then distributes that product to the end-customer, which is an individual in a retail environment or a government-distribution scheme.    \\n\\nFor this example, the pharmaceutical models will have the legal entity customer represented but not the individual 'end customer' since that is represented in the appropriate retail industry models, which are a different offering.     \\n\\nOf course, the entire set of data available for a legal entity customer is contained in the associated LEGAL ENTITY CUSTOMER Business Area Model.   Reference the LEGAL ENTITY CUSTOMER Business Area Model to incorporate additional data that may be of relevance.\\n\\nIn many industries both types of customers are represented since a legal entity or individual can purchase products, goods or services and enter into contracts.    For these industries, both types of customers are represented by some of the more significant or relevant data derived from the associated LEGAL ENTITY or INDIVIDUAL CUSTOMER business area models.   These models can be used to expand the scope or level of detail in any of the enterprise, business area or data warehouse models.\",\"baseEntityReference\":{\"name\":\"IndividualCustomer\",\"path\":\"IndividualCustomer.cdm.json/IndividualCustomer\"},\"primaryKey\":[\"CustomerId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"CustomerId\"},\"dataType\":\"long\",\"description\":\"The unique identifier of a Customer.\",\"isNullable\":false,\"name\":\"CustomerId\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":256,\"description\":\"Value from import\",\"isNullable\":true,\"name\":\"OriginalCustomerID\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The last name of the Individual Customer.\",\"isNullable\":true,\"name\":\"IndividualCustomerLastName\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The first name of the Individual Customer.\",\"isNullable\":true,\"name\":\"IndividualCustomerFirstName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"IndividualCustomerName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of the Individual Customer.\",\"isNullable\":true,\"name\":\"IndividualCustomerName\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The middle name of the Individual Customer.\",\"isNullable\":true,\"name\":\"IndividualCustomerMiddleName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"DateOfBirth\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date of birth of the individual customer.\",\"isNullable\":true,\"name\":\"DateOfBirth\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"DateOfDeath\"},\"dataType\":\"date\",\"dateFormat\":\"YYYY-MM-DD\",\"description\":\"The date of death of the individual customer.\",\"isNullable\":true,\"name\":\"DateOfDeath\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"SexId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a Sex.\",\"isNullable\":true,\"name\":\"SexId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"GenderId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a Gender.\",\"isNullable\":true,\"name\":\"GenderId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"EthnicCategoryId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of an Ethnic Category.\",\"isNullable\":true,\"name\":\"EthnicCategoryId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"IndividualCustomer.cdm.json/IndividualCustomer\",\"name\":\"RacialCategoryId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a Racial Category.\",\"isNullable\":true,\"name\":\"RacialCategoryId\"}]}}}",
+			"Description": "An 'individual customer' is one of the two types of customers upon which the Microsoft data models focus.      'Legal entity customer' is the other.\n\nThe definition of 'customer' is of critical importance for every organization.    \n\nIt is the customer that is the focus of product planning, marketing, sales, service, reporting and analytics.    Without 'customer' there would be no need for the organization to exist since its purpose is to serve the customer and profit from that interaction.\n\nThe definition of 'customer' must be consistent with how customers exist and interact with the organization in the real world.  \n\nAn artificial or conceptual definition of 'customer' that is not consistent with these two objectives is doomed to fail because the data will not be consistent with the definition and employees will not accept concepts or terms that are not consistent with what they see, know and how they interact with customers on a working basis.\n\nMicrosoft defines 'customer' to meet these objectives.    When we look out into the real world we see two dominant types of customers:  human beings ('individual customers') and legal entities ('legal entity customers')>    \n\nIndividual customers are human beings, male and female individuals, of various ages, sex, demographics and a variety of similar dimensions that describe and define those who purchase products, good and services.    \n\nLegal entities are those legally-defined entities such as corporations, partnerships, non-profit organizations, government organizations etc. that purchase products, goods and services.\n\nThis view of 'customer' is consistent with the real world and consistent with how employees view and interact with customers.\n\nOf course, that is just the start of identifying, defining and understanding each corresponding type of 'customer'.     There is a great deal of detail, complexity and related data that can be used to define each type of customer to various levels of detail and different dimensions of information.    Microsoft implements these detailed concepts and related data via two distinct business area models that expand the coverage and complexity of each type of customer:\n\n-  INDIVIDUAL CUSTOMER Business Area Model\n-  LEGAL ENTITY CUSTOMER Business Area Model\n\nNote:\nEach of the Microsoft models - enterprise, business area or data warehouse - have a representative level of detail for the appropriate type of customer, which is a 'subset' of the total data available in the associated INDIVIDUAL CUSTOMER or LEGAL ENTITY CUSTOMER business area models..   Reference either of those models to expand the coverage or level of detail in each respective data model.\n\nThe actual customer implemented in each model depends upon the dominant use of customer for that industry.     \n\nFor example, in the pharmaceutical industry the customer is a legal entity, which represents another corporation, company, government organization etc. that purchases the pharmaceutical product and then distributes that product to the end-customer, which is an individual in a retail environment or a government-distribution scheme.    \n\nFor this example, the pharmaceutical models will have the legal entity customer represented but not the individual 'end customer' since that is represented in the appropriate retail industry models, which are a different offering.     \n\nOf course, the entire set of data available for a legal entity customer is contained in the associated LEGAL ENTITY CUSTOMER Business Area Model.   Reference the LEGAL ENTITY CUSTOMER Business Area Model to incorporate additional data that may be of relevance.\n\nIn many industries both types of customers are represented since a legal entity or individual can purchase products, goods or services and enter into contracts.    For these industries, both types of customers are represented by some of the more significant or relevant data derived from the associated LEGAL ENTITY or INDIVIDUAL CUSTOMER business area models.   These models can be used to expand the scope or level of detail in any of the enterprise, business area or data warehouse models.",
+			"DisplayFolderInfo": "{\"name\":\"Customer\",\"colorCode\":\"#022F22\"}",
+			"PrimaryKeys": "CustomerId",
+			"spark.sql.sources.provider": "parquet"
+		},
+		"Retention": 0,
+		"Temporary": false,
+		"IsRewriteEnabled": false
+	},
+	"type": "TABLE"
+}

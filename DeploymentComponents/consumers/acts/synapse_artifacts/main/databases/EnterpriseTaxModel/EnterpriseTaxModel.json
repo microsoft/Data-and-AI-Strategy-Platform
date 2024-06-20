@@ -1,0 +1,24 @@
+{
+	"name": "EnterpriseTaxModel",
+	"properties": {
+		"Name": "EnterpriseTaxModel",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true,
+			"DerivedModelDBInfo": "{\"ModelDirectives\":{\"BaseModel\":{\"Name\":\"ConsumerGoods\",\"Version\":\"0.1.0\"}}}",
+			"x-ms-usageinfo": "AzureSynapseDatabaseTemplate"
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel",
+			"Properties": {
+				"FormatType": "parquet",
+				"LinkedServiceName": "LS_DataLake"
+			}
+		}
+	},
+	"type": "DATABASE"
+}

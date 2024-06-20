@@ -1,0 +1,64 @@
+{
+    "name": "df_VATDailyTAXModel",
+    "properties": {
+        "folder": {
+            "name": "df_Operational"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "DailyTax"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "VATDailyTAXModel"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     path as string,",
+                "     filename as string",
+                "}",
+                "source(output(",
+                "          ID as short,",
+                "          ReportingPeriod as string,",
+                "          IncomeTax as double,",
+                "          IncomeTaxTarget as double,",
+                "          ValueAddedTax as double,",
+                "          ValueAddedTaxTarget as double,",
+                "          CorporationTax as double,",
+                "          CorporationTaxTarget as double,",
+                "          location as string,",
+                "          Industries as string",
+                "     ),",
+                "     useSchema: false,",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'delimited',",
+                "     fileSystem: 'raw',",
+                "     folderPath: (replace($path, \"raw/\", \"\")),",
+                "     fileName: ($filename),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     multiLineRow: true) ~> DailyTax",
+                "DailyTax sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: 'TAXModel',",
+                "     tableName: 'VatDaily') ~> VATDailyTAXModel"
+            ]
+        }
+    }
+}

@@ -1,0 +1,113 @@
+{
+	"name": "joinContractOwnership",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation/df_testing"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Parquet_sink",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          date as string,",
+				"          buyer_id as string,",
+				"          buyer_name as string,",
+				"          tender_id as string,",
+				"          awards_suppliers_id as string,",
+				"          awards_suppliers_name as string,",
+				"          awards_items_id as string,",
+				"          awards_items_description as string,",
+				"          lots_id as string,",
+				"          lots_description as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/Flattened/*']) ~> source1",
+				"source(output(",
+				"          statement_id as string,",
+				"          statement_type as string,",
+				"          entity_name as string,",
+				"          addresses_address as string,",
+				"          addresses_country as string,",
+				"          addresses_type as string,",
+				"          identifiers_id as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Entity/Flattened/*']) ~> source2",
+				"select1 derive(awards_supplier_name = regexReplace(lower(awards_suppliers_name), \"[\\\"\\'*()-:;]\", \"\")) ~> derivedColumn1",
+				"source1 select(mapColumn(",
+				"          awards_suppliers_name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"source2 select(mapColumn(",
+				"          entity_name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 derive(entity_name = regexReplace(lower(entity_name), \"[\\\"\\'*()-:;]\", \"\")) ~> derivedColumn2",
+				"derivedColumn1, derivedColumn2 join(fuzzyCompare(awards_suppliers_name, entity_name, 80.00),",
+				"     joinType:'inner',",
+				"     matchType:'fuzzy',",
+				"     ignoreSpaces: true,",
+				"     broadcast: 'off')~> join1",
+				"join1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

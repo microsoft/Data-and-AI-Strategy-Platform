@@ -1,0 +1,47 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "kind": {
+            "value": "GlobalDocumentDB"
+        },
+        "databaseContainers": {
+            "value": [
+              {
+                "id": 0,
+                "Name": "Bookmarks"
+              },
+              {
+                "id": 1,
+                "Name": "DeploymentsStatus"
+              },
+              {
+                "id": 2,
+                "Name": "PendingReviews"
+              },
+              {
+                "id": 3,
+                "Name": "GitHubStatistics"
+              },
+              {
+                "id": 4,
+                "Name": "Assets"
+              },
+              {
+                "id": 5,
+                "Name": "Industries"
+              },
+              {
+                "id": 6,
+                "Name": "Reviews"
+              },
+              {
+                "id": 7,
+                "Name": "Tags"
+              }
+            ]
+          }
+    }
+}

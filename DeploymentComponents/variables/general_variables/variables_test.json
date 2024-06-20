@@ -1,0 +1,76 @@
+{
+    "azureResourceLocation": "eastus2",
+
+    "PrimaryRgName": "",
+
+    "tags": {
+        "env": "test"
+    },
+
+    "fabricCapacityName": "",
+
+    "fabricSKU": "F2",
+    
+    "synapseWorkspaceName": "",
+
+    "dataFactoryName": "",
+
+    "azureSQLServerName": "",
+    "azureSQLServerDBName": "MetadataControl",
+
+    "keyVaultName": "",
+
+    "dataLakeName": "",
+
+    "landingStorageName": "",
+
+    "LogicAppRgName": "",
+
+    "logicAppName": "",
+
+    "logicAppServicePlanName": "",
+
+    "logicAppStorageName": "",
+
+    "logicAppInsightsName": "",
+
+    "purviewName": "",
+
+    "logAnalyticsName": "",
+
+    "MlRgName": "",
+
+    "mlWorkspaceName": "",
+
+    "mlWorkspaceKeyVaultName": "",
+
+    "mlStorageName": "",
+
+    "mlAppInsightsName": "",
+
+    "mlContainerRegistryName": "",
+
+    "databricksWorkspaceName": "",
+
+    "cognitiveServiceName": "",
+
+    "eventHubNamespaceName": "",
+
+    "streamAnalyticsName": "",
+
+    "OpenAIRgName": "",
+
+    "OpenAIServiceName": "",
+
+    "OpenAICognitiveSearchName": "",
+
+    "OpenAIDemoAppName": "",
+
+    "OpenAIDemoAppInsightsName": "",
+
+    "OpenAIDemoKeyVaultName": "",
+
+    "OpenAIDemoDocumentIntelligenceName": "",
+    
+    "OpenAIDemoAppServicePlanName": ""
+}

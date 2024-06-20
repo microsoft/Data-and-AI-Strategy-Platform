@@ -1,0 +1,101 @@
+{
+    "name": "PL_BO_Part2b_Contact",
+    "properties": {
+        "activities": [
+            {
+                "name": "DF_Contact",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "df_ContactBOModel",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "lake_db_name": {
+                                "value": "'@{pipeline().parameters.lake_db_name}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "integrationRuntime": {
+                        "referenceName": "ManagedVnetIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Contact",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@pipeline().parameters.rowIDs",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "UpdateProcessed",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                "storedProcedureParameters": {
+                                    "rowid": {
+                                        "value": {
+                                            "value": "@item().id",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_SQL_Orchestration",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "rowIDs": {
+                "type": "array"
+            },
+            "lake_db_name": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "BeneficialOwnership"
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-06-14T19:06:51Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

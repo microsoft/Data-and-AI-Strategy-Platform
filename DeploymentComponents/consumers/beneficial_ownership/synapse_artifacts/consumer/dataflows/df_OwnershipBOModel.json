@@ -1,0 +1,118 @@
+{
+	"name": "df_OwnershipBOModel",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Mapping"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "OpenOwnership"
+				},
+				{
+					"name": "AttributeDefinition"
+				},
+				{
+					"name": "Entity"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     lake_db_name as string ('BeneficialOwnershipModel')",
+				"}",
+				"source(output(",
+				"          EntityID as string,",
+				"          AttributeID as string,",
+				"          Value as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Person/OwnershipDF_Processed/*/*']) ~> OpenOwnership",
+				"source(output(",
+				"          AttributeID as string,",
+				"          Name as string,",
+				"          Description as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'AttributeDefinition') ~> AttributeDefinition",
+				"source(output(",
+				"          EntityID as string,",
+				"          SourceID as string,",
+				"          SourceSystem as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'Entity') ~> Entity",
+				"OpenOwnership, AttributeDefinition join(OpenOwnership@AttributeID == Name,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1, Entity join(OpenOwnership@EntityID == SourceID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"aggregate1 select(mapColumn(",
+				"          EntityID,",
+				"          AttributeID,",
+				"          Value",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"join2 aggregate(groupBy(Entity@EntityID,",
+				"          AttributeDefinition@AttributeID,",
+				"          Value),",
+				"     count = count(Entity@EntityID)) ~> aggregate1",
+				"select1 filter(not(isNull(Value)) && length(Value) > 2 ||\r",
+				"not(isNull(EntityID))) ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'Ownership') ~> sink1"
+			]
+		}
+	}
+}

@@ -1,0 +1,118 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_stored_procedure": {
+                "inputs": {
+                    "parameters": {
+                        "storedProcedureName": "usp_InsertDataMapping",
+                        "storedProcedureParameters": {
+                            "JsonData": "@variables('JsonBody')"
+                        }
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql-3",
+                        "operationId": "executeStoredProcedure",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {
+                    "Initialize_JSON": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ServiceProvider"
+            },
+            "Initialize_JSON": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "JsonBody",
+                            "type": "string",
+                            "value": "@{triggerBody()}"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "TimeStamp": {
+                                    "type": "string"
+                                },
+                                "mapping": {
+                                    "type": "string"
+                                },
+                                "sink": {
+                                    "type": "string"
+                                },
+                                "sinkDataType": {
+                                    "type": "string"
+                                },
+                                "sinkOrdinal": {
+                                    "type": "string"
+                                },
+                                "sinkdbName": {
+                                    "type": "string"
+                                },
+                                "sinkdbSchema": {
+                                    "type": "string"
+                                },
+                                "sinkdbTableName": {
+                                    "type": "string"
+                                },
+                                "source": {
+                                    "type": "string"
+                                },
+                                "sourceCTId": {
+                                    "type": "string"
+                                },
+                                "sourceDatatype": {
+                                    "type": "string"
+                                },
+                                "sourceFileName": {
+                                    "type": "string"
+                                },
+                                "sourceOrdinal": {
+                                    "type": "string"
+                                },
+                                "sourcePath": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "TimeStamp",
+                                "mapping",
+                                "sink",
+                                "sinkDataType",
+                                "sinkOrdinal",
+                                "sinkdbName",
+                                "sinkdbSchema",
+                                "sinkdbTableName",
+                                "source",
+                                "sourceCTId",
+                                "sourceDatatype",
+                                "sourceFileName",
+                                "sourceOrdinal",
+                                "sourcePath"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

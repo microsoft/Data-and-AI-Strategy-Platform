@@ -1,0 +1,172 @@
+{
+    "name": "PL_3_MoveToStaging_Step1",
+    "properties": {
+        "activities": [
+            {
+                "name": "Step 2 Pipeline",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Get Log File Details",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_3_MoveToStaging_Step2",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "sourceFolder": {
+                            "value": "@concat('raw/',activity('Get Log File Details').output.firstRow.folderPath)",
+                            "type": "Expression"
+                        },
+                        "sourceFile": {
+                            "value": "@coalesce(activity('Get Log File Details').output.firstRow.fileName, '')",
+                            "type": "Expression"
+                        },
+                        "triggerName": {
+                            "value": "@pipeline().TriggerName",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Set Logging Record to Failed",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Step 2 Pipeline",
+                        "dependencyConditions": [
+                            "Failed",
+                            "Skipped"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                    "storedProcedureParameters": {
+                        "source_filename": {
+                            "value": {
+                                "value": "@pipeline().parameters.sourceFile",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "source_folderpath": {
+                            "value": {
+                                "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "ingestion_status": {
+                            "value": "Failed",
+                            "type": "String"
+                        },
+                        "pipeline_id": {
+                            "value": {
+                                "value": "@pipeline().RunId",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "id_to_update": {
+                            "value": "0",
+                            "type": "Int32"
+                        },
+                        "pipeline_trigger": {
+                            "value": {
+                                "value": "@pipeline().TriggerName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_SQL_MetadataControl",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Get Log File Details",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "AzureBlobFSReadSettings",
+                            "recursive": false,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "DS_ADLS_DelimitedText_File_HeaderTrue",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "container": "raw",
+                            "folderPath": {
+                                "value": "@if(contains(pipeline().parameters.sourceFolder,'/'),\nconcat(substring(pipeline().parameters.sourceFolder, 4, add(length(pipeline().parameters.sourceFolder),-4)),'/')\n,'')",
+                                "type": "Expression"
+                            },
+                            "fileName": {
+                                "value": "@pipeline().parameters.sourceFile",
+                                "type": "Expression"
+                            },
+                            "encoding": "UTF-8",
+                            "firstRowHeader": true,
+                            "delimiter": ","
+                        }
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "copyBehavior": {
+                "type": "String"
+            },
+            "folderPathNoContainer": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "MoveToStaging"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-17T16:20:43Z"
+    }
+}

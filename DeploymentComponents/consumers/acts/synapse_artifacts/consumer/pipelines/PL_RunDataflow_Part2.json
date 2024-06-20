@@ -1,0 +1,1021 @@
+{
+    "name": "PL_RunDataflow_Part2",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch1",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@split(pipeline().parameters.path,'/')[3]",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "FactInvoiceDetails",
+                            "activities": [
+                                {
+                                    "name": "DF - InvoiceDetails",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_InvoiceDetailsTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - InvoiceDetails",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "AllData",
+                            "activities": [
+                                {
+                                    "name": "DF - AllData",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_AllDataTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_1",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - AllData",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "AnomaliesMonth",
+                            "activities": [
+                                {
+                                    "name": "DF - Anomalies",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_AnomaliesTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_2",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - Anomalies",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "AuditorStateSupervisor",
+                            "activities": [
+                                {
+                                    "name": "DF - Auditor",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_auditorTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_3",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - Auditor",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Axis",
+                            "activities": [
+                                {
+                                    "name": "DF - Axis",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_AxisTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_4",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - Axis",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "CorruptionData",
+                            "activities": [
+                                {
+                                    "name": "DF - Corruption",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_CorruptionTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_5",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - Corruption",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Country",
+                            "activities": [
+                                {
+                                    "name": "DF - Country",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_CountryTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_6",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - Country",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FactPbiMonthlyTaxDetails",
+                            "activities": [
+                                {
+                                    "name": "DF - MonthlyTax",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_monthlyTaxDetailTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_7",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - MonthlyTax",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FactTaxPayerSatisfactionDetail",
+                            "activities": [
+                                {
+                                    "name": "DF - TaxPayerSatisfaction",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_TaxPayerSatisfactionTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_8",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - TaxPayerSatisfaction",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "VATDaily",
+                            "activities": [
+                                {
+                                    "name": "DF - VAT Daily",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_VATDailyTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_9",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - VAT Daily",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "TargetFactorsbyMonth",
+                            "activities": [
+                                {
+                                    "name": "DF - TargetFactors",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_TargetFactorsTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_10",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - TargetFactors",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DailyTaxDetails",
+                            "activities": [
+                                {
+                                    "name": "DF - dailyTax",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_dailyTaxTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_11",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - dailyTax",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "VatChartData",
+                            "activities": [
+                                {
+                                    "name": "DF - VATBottom",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "df_VATBottomChartTAXModel",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "path": {
+                                                    "value": "'@{pipeline().parameters.path}'",
+                                                    "type": "Expression"
+                                                },
+                                                "filename": {
+                                                    "value": "'@{pipeline().parameters.filename}'",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "compute": {
+                                            "coreCount": 8,
+                                            "computeType": "General"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                },
+                                {
+                                    "name": "UpdateProcessed_12",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "DF - VATBottom",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                        "storedProcedureParameters": {
+                                            "rowid": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.rowid",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_Orchestration",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Wait1",
+                            "type": "Wait",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "waitTimeInSeconds": 1
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "path": {
+                "type": "string"
+            },
+            "filename": {
+                "type": "string"
+            },
+            "rowid": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-01-12T22:59:10Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

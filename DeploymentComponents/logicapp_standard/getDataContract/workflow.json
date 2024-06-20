@@ -1,0 +1,172 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Condition": {
+                "actions": {
+                    "Response_1": {
+                        "inputs": {
+                            "body": "@body('Execute_query')",
+                            "statusCode": 200
+                        },
+                        "kind": "Http",
+                        "type": "Response"
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Response": {
+                            "inputs": {
+                                "body": "@body('Execute_query')[0]",
+                                "schema": {
+                                    "items": {
+                                        "items": {
+                                            "properties": {
+                                                "Active": {
+                                                    "type": "boolean"
+                                                },
+                                                "BusinessContact": {
+                                                    "type": "string"
+                                                },
+                                                "ContractID": {
+                                                    "type": "string"
+                                                },
+                                                "CreatedBy": {
+                                                    "type": "string"
+                                                },
+                                                "CreatedOnDate": {
+                                                    "type": "string"
+                                                },
+                                                "DataAssetTechnicalInformation": {
+                                                    "type": "object"
+                                                },
+                                                "DataClassificationLevel": {
+                                                    "type": "string"
+                                                },
+                                                "DataOwner": {
+                                                    "type": "string"
+                                                },
+                                                "DataSchema": {
+                                                    "type": "string"
+                                                },
+                                                "DataSourceNameFriendly": {
+                                                    "type": "string"
+                                                },
+                                                "DataSourceNameSystem": {
+                                                    "type": "string"
+                                                },
+                                                "Description": {
+                                                    "type": "string"
+                                                },
+                                                "EngineeringContact": {
+                                                    "type": "string"
+                                                },
+                                                "ID": {
+                                                    "type": "integer"
+                                                },
+                                                "Metadata": {
+                                                    "type": "string"
+                                                },
+                                                "Pattern": {
+                                                    "type": "string"
+                                                },
+                                                "PublisherName": {
+                                                    "type": "string"
+                                                },
+                                                "Restrictions": {
+                                                    "type": "string"
+                                                },
+                                                "SME": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "SourceSystem": {
+                                                    "type": "string"
+                                                },
+                                                "SubjectArea": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "ID",
+                                                "ContractID",
+                                                "SubjectArea",
+                                                "SourceSystem",
+                                                "PublisherName",
+                                                "DataSourceNameSystem",
+                                                "DataSourceNameFriendly",
+                                                "Description",
+                                                "BusinessContact",
+                                                "EngineeringContact",
+                                                "DataOwner",
+                                                "SME",
+                                                "Restrictions",
+                                                "Metadata",
+                                                "DataClassificationLevel",
+                                                "CreatedBy",
+                                                "DataSchema",
+                                                "CreatedOnDate",
+                                                "Active",
+                                                "Pattern",
+                                                "DataAssetTechnicalInformation"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "array"
+                                },
+                                "statusCode": 200
+                            },
+                            "kind": "Http",
+                            "type": "Response"
+                        }
+                    }
+                },
+                "expression": {
+                    "and": [
+                        {
+                            "equals": [
+                                "@length(body('Execute_query'))",
+                                0
+                            ]
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Execute_query": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "If"
+            },
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "SELECT [ID]\n ,[ContractID]\n ,[SubjectArea]\n ,[SourceSystem]\n ,[PublisherName]\n ,[DataSourceNameSystem]\n ,[DataSourceNameFriendly]\n ,[Description]\n ,[BusinessContact]\n ,[EngineeringContact]\n ,[DataOwner]\n ,[SME] \n,[Restrictions]\n ,[Metadata]\n ,[DataClassificationLevel]\n ,[CreatedBy]\n ,[DataSchema]\n ,[CreatedOnDate]\n ,[Active]\n ,[Pattern]\n ,[DataAssetTechnicalInformation],[hsActive]\n FROM [dbo].[DataContract]"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

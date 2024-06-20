@@ -1,0 +1,7 @@
+{
+    "name": "MPE_MachineLearningWorkspace",
+    "properties": {
+        "privateLinkResourceId": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.MachineLearningServices/workspaces/MachineLearningWorkspaceName",
+        "groupId": "amlworkspace"
+    }
+}

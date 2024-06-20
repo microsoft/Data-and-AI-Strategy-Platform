@@ -1,0 +1,143 @@
+# This is a basic workflow to help you get started with Actions
+
+name: cd-adf
+
+# Controls when the workflow will run
+on:
+  # Workflow executes when new commit happens on main within data factory publish folder
+  #push:
+  #  branches:
+  #    - 'adf_publish'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      DeploymemtEnvironments:
+        description: 'Deploymemt To Which Environments'
+        required: true 
+        type: choice
+        options: 
+          - test
+          - prod
+          - test and prod
+      PublishBranchName:
+        description: 'ADF Publish Branch Name'
+        required: true 
+        type: choice
+        options: 
+          - UpdateOptionsWithCorrectBranchName
+
+permissions:
+  id-token: write
+  contents: read
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  deploy-to-test-datafactory:
+    if: ${{ inputs.DeploymemtEnvironments == 'test' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: test
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.PublishBranchName }}
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $dataFactoryNameDev = $json_data.dataFactoryName
+          "dataFactoryNameDev=$dataFactoryNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_test.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      - name: Deploy to Data Factory
+        uses: Azure/data-factory-deploy-action@v1.2.0
+        with:
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          dataFactoryName: ${{ env.dataFactoryNameDev }}
+          armTemplateFile: ./${{ env.dataFactoryNameDev }}/ARMTemplateForFactory.json
+          armTemplateParametersFile: ./${{ env.dataFactoryName }}/ARMTemplateParametersForFactory.json
+          # additionalParameters: 'key1=value key2=value keyN=value' [optional]
+          # skipAzModuleInstallation: true [optional]
+
+  deploy-to-prod-datafactory:
+    if: ${{ inputs.DeploymemtEnvironments == 'prod' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: production
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.PublishBranchName }}
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $dataFactoryNameDev = $json_data.dataFactoryName
+          "dataFactoryNameDev=$dataFactoryNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_prod.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      - name: Deploy to Data Factory
+        uses: Azure/data-factory-deploy-action@v1.2.0
+        with:
+          resourceGroupName: ${{ env.PrimaryRgName }}
+          dataFactoryName: ${{ env.dataFactoryNameDev }}
+          armTemplateFile: ./${{ env.dataFactoryNameDev }}/ARMTemplateForFactory.json
+          armTemplateParametersFile: ./${{ env.dataFactoryName }}/ARMTemplateParametersForFactory.json
+          # additionalParameters: 'key1=value key2=value keyN=value' [optional]
+          # skipAzModuleInstallation: true [optional]

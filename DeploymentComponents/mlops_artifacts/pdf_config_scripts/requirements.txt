@@ -1,0 +1,13 @@
+joblib
+scikit-learn
+numpy
+pandas
+matplotlib
+opencensus-ext-azure
+pytest
+pytest-env
+azure-identity
+azure-ai-formrecognizer
+azure-keyvault-secrets
+azureml-core
+azureml-defaults

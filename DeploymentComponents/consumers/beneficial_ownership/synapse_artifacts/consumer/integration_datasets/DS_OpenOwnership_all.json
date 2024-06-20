@@ -1,0 +1,103 @@
+{
+	"name": "DS_OpenOwnership_all",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ServerlessSQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [
+			{
+				"name": "doc",
+				"type": "nvarchar"
+			},
+			{
+				"name": "statement_type",
+				"type": "varchar"
+			},
+			{
+				"name": "entity_type",
+				"type": "varchar"
+			},
+			{
+				"name": "entity_name",
+				"type": "varchar"
+			},
+			{
+				"name": "incorporatedInJurisdiction",
+				"type": "nvarchar"
+			},
+			{
+				"name": "identifiers",
+				"type": "nvarchar"
+			},
+			{
+				"name": "entity_founding_date",
+				"type": "varchar"
+			},
+			{
+				"name": "entity_dissolution_date",
+				"type": "varchar"
+			},
+			{
+				"name": "addresses",
+				"type": "nvarchar"
+			},
+			{
+				"name": "person_type",
+				"type": "varchar"
+			},
+			{
+				"name": "names",
+				"type": "nvarchar"
+			},
+			{
+				"name": "nationalities",
+				"type": "nvarchar"
+			},
+			{
+				"name": "person_birthDate",
+				"type": "varchar"
+			},
+			{
+				"name": "statement_date",
+				"type": "varchar"
+			},
+			{
+				"name": "subject",
+				"type": "nvarchar"
+			},
+			{
+				"name": "interestedParty",
+				"type": "nvarchar"
+			},
+			{
+				"name": "interests",
+				"type": "nvarchar"
+			},
+			{
+				"name": "source",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Filename",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Filepath",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Query_Timestamp",
+				"type": "datetime2",
+				"scale": 7
+			}
+		],
+		"typeProperties": {
+			"schema": "stage",
+			"table": "OpenOwnership"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "relationship-gjrdctwtrm",
+	"properties": {
+		"Name": "relationship-gjrdctwtrm",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "InvoiceEvent",
+		"ToTableName": "Invoice",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "InvoiceId",
+				"ToColumnName": "InvoiceId"
+			}
+		],
+		"RelationshipType": 0
+	},
+	"type": "RELATIONSHIP"
+}

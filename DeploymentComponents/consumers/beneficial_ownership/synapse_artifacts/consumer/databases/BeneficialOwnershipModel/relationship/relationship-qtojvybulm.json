@@ -1,0 +1,26 @@
+{
+	"name": "relationship-qtojvybulm",
+	"properties": {
+		"Name": "relationship-qtojvybulm",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "AttributeDefinition",
+		"ToTableName": "Contact",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "AttributeID",
+				"ToColumnName": "AttributeID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "32dc95d1-b0b5-47f4-a555-3c27888b7d41"
+	},
+	"type": "RELATIONSHIP"
+}

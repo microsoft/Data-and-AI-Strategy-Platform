@@ -1,0 +1,32 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "bastionHostScaleUnits": {
+            "value": 2
+        },
+        "enableIpConnect": {
+            "value": false
+        },
+        "enableTunneling": {
+            "value": true
+        },
+        "enableShareableLink": {
+            "value": false
+        },
+        "enableKerberos": {
+            "value": false
+        },
+        "disableCopyPaste": {
+            "value": false
+        },
+        "enableAzureFirewall": {
+            "value": false
+        },       
+        "azureFirewallTier": {
+            "value": "Standard"
+        }
+    }
+}

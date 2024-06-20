@@ -1,0 +1,99 @@
+{
+	"name": "df_Location_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "Location"
+				}
+			],
+			"transformations": [
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          LocationId as string,",
+				"          OriginalLocationID as string,",
+				"          LocationName as string,",
+				"          LocationDescription as string,",
+				"          LocationAddressLine1 as string,",
+				"          LocationAddressLine2 as string,",
+				"          LocationCity as string,",
+				"          LocationStateId as string,",
+				"          LocationStateName as string,",
+				"          LocationZipCode as string,",
+				"          LocationNote as string,",
+				"          LocationLatitude as string,",
+				"          LocationLongitude as string,",
+				"          LocationDatum as string,",
+				"          LocationElevation as string,",
+				"          LocationElevationUnitOfMeasureId as string,",
+				"          GlobalLocationNumber as string,",
+				"          TimezoneId as string,",
+				"          DaylightSavingsTimeObservedIndicator as string,",
+				"          CountryId as string,",
+				"          SubdivisionId as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/Location/*']) ~> source1",
+				"source1 keyGenerate(output(LocationId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 select(mapColumn(",
+				"          LocationId,",
+				"          OriginalLocationID,",
+				"          LocationName,",
+				"          LocationDescription,",
+				"          LocationAddressLine1,",
+				"          LocationAddressLine2,",
+				"          LocationCity,",
+				"          LocationStateId,",
+				"          LocationStateName,",
+				"          LocationZipCode,",
+				"          LocationNote,",
+				"          LocationLatitude,",
+				"          LocationLongitude,",
+				"          LocationDatum,",
+				"          LocationElevation,",
+				"          LocationElevationUnitOfMeasureId,",
+				"          GlobalLocationNumber,",
+				"          TimezoneId,",
+				"          DaylightSavingsTimeObservedIndicator,",
+				"          CountryId,",
+				"          SubdivisionId",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Location') ~> Location"
+			]
+		}
+	}
+}

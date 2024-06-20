@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "privateLinkResourceId": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Storage/storageAccounts/storageAccountName",
+        "groupId": "dfs",
+        "fqdns": [
+            "storageAccountName.dfs.core.windows.net"
+        ]
+    }
+}

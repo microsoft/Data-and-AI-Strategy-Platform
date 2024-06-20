@@ -1,0 +1,127 @@
+# This is a basic workflow to help you get started with Actions
+
+name: cd-logicapp
+
+# Controls when the workflow will run
+on:
+  # Workflow executes when new commit happens on main within logic app folder
+  # push:
+  #  branches:
+  #    - 'main'
+  #  paths:
+  #    - 'DeliveryIP_GitHub/logicapp_standard/**'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      DeploymemtEnvironments:
+        description: 'Deploy To Which Environments'
+        required: true 
+        type: choice
+        options: 
+          - test
+          - prod
+          - test and prod
+
+permissions:
+  id-token: write
+  contents: read
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  update-testing-logicapp-workflows:
+    if: ${{ inputs.DeploymemtEnvironments == 'test' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: test
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_test.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Update Test Logic App
+      - name: Update Test Logic App
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Compress-Archive -Path ./DeploymentComponents/logicapp_standard/* -DestinationPath ./DeploymentComponents/logicapp_standard/logicapp.zip
+
+            $setting=@{"WEBSITE_RUN_FROM_PACKAGE"="1"}
+            Update-AzFunctionAppSetting -Name ${{ env.logicAppName }} -ResourceGroupName ${{ env.LogicAppRgName }} -AppSetting $setting
+            az logicapp deployment source config-zip --name ${{ env.logicAppName }} --resource-group ${{ env.LogicAppRgName }} --src ./DeploymentComponents/logicapp_standard/logicapp.zip
+          azPSVersion: "latest"
+
+  update-production-logicapp-workflows:
+    if: ${{ inputs.DeploymemtEnvironments == 'prod' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: production
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Log into Azure
+      - name: OIDC Login to Azure Public Cloud with AzPowershell (enableAzPSSession true)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Get Main Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_prod.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      # Update Prod Logic App
+      - name: Update Prod Logic App
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Compress-Archive -Path ./DeploymentComponents/logicapp_standard/* -DestinationPath ./DeploymentComponents/logicapp_standard/logicapp.zip
+
+            $setting=@{"WEBSITE_RUN_FROM_PACKAGE"="1"}
+            Update-AzFunctionAppSetting -Name ${{ env.logicAppName }} -ResourceGroupName ${{ env.LogicAppRgName }} -AppSetting $setting
+            az logicapp deployment source config-zip --name ${{ env.logicAppName }} --resource-group ${{ env.LogicAppRgName }} --src ./DeploymentComponents/logicapp_standard/logicapp.zip
+          azPSVersion: "latest"

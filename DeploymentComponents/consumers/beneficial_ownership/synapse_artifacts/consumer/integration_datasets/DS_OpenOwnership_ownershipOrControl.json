@@ -1,0 +1,17 @@
+{
+	"name": "DS_OpenOwnership_ownershipOrControl",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ServerlessSQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "stage",
+			"table": "OpenOwnership_ownershipOrControl"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

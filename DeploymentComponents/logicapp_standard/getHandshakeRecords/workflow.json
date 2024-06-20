@@ -1,0 +1,148 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Execute_query": {
+                "inputs": {
+                    "parameters": {
+                        "query": "    SELECT t1.DataContractID, t1.DataSourceName,t1.Publisher,t1.CreatedBy,t1.CreatedByDate,t1.Active,t1.ConnectionType,j1.label AS label, j1.value AS value\n    FROM [dbo].[Handshake] t1\n    CROSS APPLY OPENJSON(t1.DataAssetTechnicalInformation) WITH (label NVARCHAR(100), value NVARCHAR(100)) AS j1\n    UNION ALL\n    SELECT t2.DataContractID, t2.DataSourceName,t2.Publisher,t2.CreatedBy,t2.CreatedByDate,t2.Active,t2.ConnectionType, j2.label AS label, j2.value AS value\n    FROM [dbo].[Handshake] t2\n    CROSS APPLY OPENJSON(t2.SourceTechnicalInformation) WITH (label NVARCHAR(100), value NVARCHAR(100)) AS j2"
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "sql",
+                        "operationId": "executeQuery",
+                        "serviceProviderId": "/serviceProviders/sql"
+                    }
+                },
+                "runAfter": {},
+                "type": "ServiceProvider"
+            },
+            "Parse_JSON": {
+                "inputs": {
+                    "content": "@body('Execute_query')[0]",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Active": {
+                                    "type": "boolean"
+                                },
+                                "ConnectionType": {
+                                    "type": "string"
+                                },
+                                "CreatedBy": {
+                                    "type": "string"
+                                },
+                                "CreatedByDate": {
+                                    "type": "string"
+                                },
+                                "DataContractID": {
+                                    "type": "string"
+                                },
+                                "DataSourceName": {
+                                    "type": "string"
+                                },
+                                "Publisher": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "DataContractID",
+                                "DataSourceName",
+                                "Publisher",
+                                "CreatedBy",
+                                "CreatedByDate",
+                                "Active",
+                                "ConnectionType",
+                                "label",
+                                "value"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    }
+                },
+                "runAfter": {
+                    "Execute_query": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "ParseJson"
+            },
+            "Response": {
+                "inputs": {
+                    "body": "@body('Parse_JSON')",
+                    "schema": {
+                        "items": {
+                            "properties": {
+                                "Active": {
+                                    "type": "boolean"
+                                },
+                                "ConnectionType": {
+                                    "type": "string"
+                                },
+                                "CreatedBy": {
+                                    "type": "string"
+                                },
+                                "CreatedByDate": {
+                                    "type": "string"
+                                },
+                                "DataContractID": {
+                                    "type": "string"
+                                },
+                                "DataSourceName": {
+                                    "type": "string"
+                                },
+                                "Publisher": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "DataContractID",
+                                "DataSourceName",
+                                "Publisher",
+                                "CreatedBy",
+                                "CreatedByDate",
+                                "Active",
+                                "ConnectionType",
+                                "label",
+                                "value"
+                            ],
+                            "type": "object"
+                        },
+                        "type": "array"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "Parse_JSON": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

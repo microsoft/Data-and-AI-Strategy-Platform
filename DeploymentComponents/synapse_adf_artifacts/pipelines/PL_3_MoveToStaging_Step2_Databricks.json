@@ -1,0 +1,241 @@
+{
+    "name": "PL_3_MoveToStaging_Step2",
+    "properties": {
+        "activities": [
+            {
+                "name": "Set Folder Path Without Container",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "folderPathNoContainer",
+                    "value": {
+                        "value": "@if(contains(pipeline().parameters.sourceFolder,'/'),\nconcat(substring(pipeline().parameters.sourceFolder, 4, add(length(pipeline().parameters.sourceFolder),-4)),'/')\n,'')",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "If Condition",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Control Table Details For Landed File",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(json(activity('Get Control Table Details For Landed File').output.firstRow.DataLoadingBehaviorSettings).dataLoadingBehavior,'Copy_to_Staging')",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Update Logging Record - No Copy",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderStoredProcedureName": "[dbo].[LogDataLandedInLandingZone]",
+                                    "storedProcedureParameters": {
+                                        "source_filename": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().parameters.sourceFile",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "source_folderpath": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "destination_filename": {
+                                            "type": "String",
+                                            "value": "N/A"
+                                        },
+                                        "destination_folderpath": {
+                                            "type": "String",
+                                            "value": "N/A"
+                                        },
+                                        "ingestion_status": {
+                                            "type": "String",
+                                            "value": "Processed"
+                                        },
+                                        "pipeline_id": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Execute Step 3",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_3_MoveToStaging_Step3",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "source_file": {
+                                        "value": "@pipeline().parameters.sourceFile",
+                                        "type": "Expression"
+                                    },
+                                    "source_folderpath": {
+                                        "value": "@pipeline().parameters.sourceFolder",
+                                        "type": "Expression"
+                                    },
+                                    "CopySourceSettings": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.CopySourceSettings",
+                                        "type": "Expression"
+                                    },
+                                    "SinkObjectSettings": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Get Control Table Details For Landed File",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Set Folder Path Without Container",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[GetControlTableRecord]",
+                        "storedProcedureParameters": {
+                            "fileName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceFile",
+                                    "type": "Expression"
+                                }
+                            },
+                            "folderPath": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('folderPathNoContainer'),''),'/',variables('folderPathNoContainer'))",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TopLevelPipelineName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().Pipeline",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TriggerName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().TriggerName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "folderPathWithContainer": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceFolder",
+                                    "type": "Expression"
+                                }
+                            },
+                            "pipeline_id": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline()?.TriggeredByPipelineRunId",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string"
+            },
+            "triggerName": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "TriggerName": {
+                "type": "String"
+            },
+            "folderPathNoContainer": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "MoveToStaging"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-01-26T17:01:24Z"
+    }
+}

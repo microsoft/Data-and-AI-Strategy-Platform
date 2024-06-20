@@ -1,0 +1,63 @@
+{
+    "properties": {
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_LandingStorage",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "InputExcelSheet"
+                }
+            ],
+            "sinks": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_LandingStorage",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "OutputCSVFile"
+                }
+            ],
+            "transformations": [],
+            "scriptLines": [
+                "parameters{",
+                "     fileName as string (\"test_excel.xlsx\"),",
+                "     folderPath as string (\"test/\"),",
+                "     container as string (\"landing\"),",
+                "     sheetname as string (\"Sheet1\"),",
+                "     range as string",
+                "}",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'excel',",
+                "     fileSystem: ($container),",
+                "     folderPath: ($folderPath),",
+                "     fileName: ($fileName),",
+                "     sheetName: ($sheetname),",
+                "     range: ($range),",
+                "     firstRowAsHeader: true) ~> InputExcelSheet",
+                "InputExcelSheet sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'delimited',",
+                "     fileSystem: ($container),",
+                "     folderPath: ($folderPath),",
+                "     columnDelimiter: ',',",
+                "     escapeChar: '\\\\',",
+                "     quoteChar: '\\\"',",
+                "     columnNamesAsHeader: true,",
+                "     partitionFileNames:[(concat(split($fileName,'.')[1],'_',$sheetname,'_temp.csv'))],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1),",
+                "     preCommands: [],",
+                "     postCommands: []) ~> OutputCSVFile"
+            ]
+        }
+    }
+}

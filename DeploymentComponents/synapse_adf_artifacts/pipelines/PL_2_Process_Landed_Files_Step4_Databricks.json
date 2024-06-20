@@ -1,0 +1,533 @@
+{
+    "name": "PL_2_Process_Landed_Files_Step4",
+    "properties": {
+        "activities": [
+            {
+                "name": "Extract File Metadata",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@if(not(contains(pipeline().parameters.CopySourceSettings, 'fileType')),'', json(pipeline().parameters.CopySourceSettings).fileType)",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "delimitedText",
+                            "activities": [
+                                {
+                                    "name": "Get CSV File Metadata",
+                                    "type": "GetMetadata",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "7.00:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataset": {
+                                            "referenceName": "DS_Landing_DelimitedText_File",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.sourceContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@pipeline().parameters.folderPathNoContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "fileName": {
+                                                    "value": "@pipeline().parameters.sourceFile",
+                                                    "type": "Expression"
+                                                },
+                                                "encoding": "UTF-8",
+                                                "firstRowHeader": true,
+                                                "delimiter": {
+                                                    "value": "@json(pipeline().parameters.CopySourceSettings).delimiter",
+                                                    "type": "Expression"
+                                                },
+                                                "compression": {
+                                                    "value": "@json(pipeline().parameters.CopySourceSettings).compression",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "fieldList": [
+                                            "columnCount",
+                                            "structure"
+                                        ],
+                                        "storeSettings": {
+                                            "type": "AzureBlobFSReadSettings",
+                                            "recursive": true,
+                                            "enablePartitionDiscovery": false
+                                        },
+                                        "formatSettings": {
+                                            "type": "DelimitedTextReadSettings"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "CSV File Structure",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Get CSV File Metadata",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileStructure",
+                                        "value": {
+                                            "value": "@string(activity('Get CSV File Metadata').output.structure)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "CSV File Type",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "CSV File Structure",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileType",
+                                        "value": "csv"
+                                    }
+                                },
+                                {
+                                    "name": "CSV File Number of Columns",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "CSV File Type",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileColumnNumber",
+                                        "value": {
+                                            "value": "@string(activity('Get CSV File Metadata').output.columnCount)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "parquet",
+                            "activities": [
+                                {
+                                    "name": "Get Parquet File Metadata",
+                                    "type": "GetMetadata",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "7.00:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataset": {
+                                            "referenceName": "DS_Landing_Parquet_File",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "container": {
+                                                    "value": "@pipeline().parameters.sourceContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "folderPath": {
+                                                    "value": "@pipeline().parameters.folderPathNoContainer",
+                                                    "type": "Expression"
+                                                },
+                                                "fileName": {
+                                                    "value": "@pipeline().parameters.sourceFile",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "fieldList": [
+                                            "columnCount",
+                                            "structure"
+                                        ],
+                                        "storeSettings": {
+                                            "type": "AzureBlobFSReadSettings",
+                                            "recursive": true,
+                                            "enablePartitionDiscovery": false
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Parquet File Structure",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Get Parquet File Metadata",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileStructure",
+                                        "value": {
+                                            "value": "@string(activity('Get Parquet File Metadata').output.structure)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Parquet File Type",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Parquet File Structure",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileType",
+                                        "value": "parquet"
+                                    }
+                                },
+                                {
+                                    "name": "Parquet File Number of Columns",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Parquet File Type",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileColumnNumber",
+                                        "value": {
+                                            "value": "@string(activity('Get Parquet File Metadata').output.columnCount)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "json",
+                            "activities": [
+                                {
+                                    "name": "Json File Structure",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Get Json File Metadata",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileStructure",
+                                        "value": {
+                                            "value": "@split(activity('Get Json File Metadata').output.status.Output.result.exitvalue,'|')[0]",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Json File Type",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Json File Structure",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileType",
+                                        "value": "json"
+                                    }
+                                },
+                                {
+                                    "name": "Json File Number of Columns",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Json File Type",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "landedFileColumnNumber",
+                                        "value": {
+                                            "value": "@split(activity('Get Json File Metadata').output.status.Output.result.exitvalue,'|')[1]",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Get Json File Metadata",
+                                    "type": "DatabricksNotebook",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "notebookPath": "/Shared/NB_JSON_Metadata",
+                                        "baseParameters": {
+                                            "multiline": {
+                                                "value": "@if(\n    equals(json(pipeline().parameters.CopySourceSettings).multiline, true), \n    'True',\n    'False'\n)",
+                                                "type": "Expression"
+                                            },
+                                            "container": {
+                                                "value": "@pipeline().parameters.sourceContainer",
+                                                "type": "Expression"
+                                            },
+                                            "folderPath": {
+                                                "value": "@pipeline().parameters.folderPathNoContainer",
+                                                "type": "Expression"
+                                            },
+                                            "fileName": {
+                                                "value": "@pipeline().parameters.sourceFile",
+                                                "type": "Expression"
+                                            },
+                                            "landingStorageAccountName": {
+                                                "value": "@pipeline().globalParameters.landingStorageAccountName",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_AzureDatabricks_JobsCompute",
+                                        "type": "LinkedServiceReference",
+                                        "parameters": {
+                                            "clusterVersion": "14.3.x-photon-scala2.12",
+                                            "clusterNodeType": "Standard_E8ds_v5",
+                                            "workerOptions": "2:8"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Step 5 Pipeline",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "Extract File Metadata",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_2_Process_Landed_Files_Step5",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "sourceFolder": {
+                            "value": "@pipeline().parameters.sourceFolder",
+                            "type": "Expression"
+                        },
+                        "sourceFile": {
+                            "value": "@pipeline().parameters.sourceFile",
+                            "type": "Expression"
+                        },
+                        "md5Hash": {
+                            "value": "@pipeline().parameters.md5Hash",
+                            "type": "Expression"
+                        },
+                        "loggingTableId": {
+                            "value": "@pipeline().parameters.loggingTableId",
+                            "type": "Expression"
+                        },
+                        "folderPathNoContainer": {
+                            "value": "@pipeline().parameters.folderPathNoContainer",
+                            "type": "Expression"
+                        },
+                        "sourceContainer": {
+                            "value": "@pipeline().parameters.sourceContainer",
+                            "type": "Expression"
+                        },
+                        "sinkContainer": {
+                            "value": "@pipeline().parameters.sinkContainer",
+                            "type": "Expression"
+                        },
+                        "CopySourceSettings": {
+                            "value": "@pipeline().parameters.CopySourceSettings",
+                            "type": "Expression"
+                        },
+                        "controlTableId": {
+                            "value": "@pipeline().parameters.controlTableId",
+                            "type": "Expression"
+                        },
+                        "sinkFolderPath": {
+                            "value": "@pipeline().parameters.sinkFolderPath",
+                            "type": "Expression"
+                        },
+                        "loadType": {
+                            "value": "@pipeline().parameters.loadType",
+                            "type": "Expression"
+                        },
+                        "fileType": {
+                            "value": "@variables('landedFileType')",
+                            "type": "Expression"
+                        },
+                        "fileNumberOfCols": {
+                            "value": "@variables('landedFileColumnNumber')",
+                            "type": "Expression"
+                        },
+                        "fileStructure": {
+                            "value": "@variables('landedFileStructure')",
+                            "type": "Expression"
+                        },
+                        "triggerName": {
+                            "value": "@pipeline().parameters.triggerName",
+                            "type": "Expression"
+                        },
+                        "DataContract": {
+                            "value": "@pipeline().parameters.DataContract",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string"
+            },
+            "md5Hash": {
+                "type": "string"
+            },
+            "loggingTableId": {
+                "type": "string"
+            },
+            "folderPathNoContainer": {
+                "type": "string"
+            },
+            "sourceContainer": {
+                "type": "string"
+            },
+            "sinkContainer": {
+                "type": "string"
+            },
+            "CopySourceSettings": {
+                "type": "string"
+            },
+            "controlTableId": {
+                "type": "string"
+            },
+            "sinkFolderPath": {
+                "type": "string"
+            },
+            "loadType": {
+                "type": "string"
+            },
+            "triggerName": {
+                "type": "string"
+            },
+            "DataContract": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "landedFileStructure": {
+                "type": "String"
+            },
+            "landedFileType": {
+                "type": "String"
+            },
+            "landedFileColumnNumber": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-02-05T21:23:54Z"
+    }
+}

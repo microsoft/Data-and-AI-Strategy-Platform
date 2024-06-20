@@ -1,0 +1,16 @@
+{
+    "properties": {
+        "annotations": [],
+        "type": "AzureMLService",
+        "typeProperties": {
+            "subscriptionId": "subID",
+            "resourceGroupName": "resourceGroupNameInput",
+            "mlWorkspaceName": "MachineLearningWorkspaceName",
+            "authentication": "MSI"
+        },
+        "connectVia": {
+            "referenceName": "ManagedVnetIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

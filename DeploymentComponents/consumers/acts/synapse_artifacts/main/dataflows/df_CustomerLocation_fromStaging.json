@@ -1,0 +1,146 @@
+{
+	"name": "df_CustomerLocation_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				},
+				{
+					"name": "Taxpayer"
+				},
+				{
+					"name": "Location"
+				}
+			],
+			"sinks": [
+				{
+					"name": "CustomerLocation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerId as string,",
+				"          OriginalCustomerID as string,",
+				"          LocationTypeId as string,",
+				"          LocationId as string,",
+				"          OriginalLocationID as string,",
+				"          PeriodStartTimestamp as string,",
+				"          PeriodEndTimestamp as string,",
+				"          GlobalLocationNumber as string,",
+				"          PreferenceId as string,",
+				"          CustomerLocationNote as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/CustomerLocation/*']) ~> source1",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"source(output(",
+				"          LocationId as integer,",
+				"          OriginalLocationID as string,",
+				"          LocationName as string,",
+				"          LocationDescription as string,",
+				"          LocationAddressLine1 as string,",
+				"          LocationAddressLine2 as string,",
+				"          LocationCity as string,",
+				"          LocationStateId as integer,",
+				"          LocationStateName as string,",
+				"          LocationZipCode as decimal(11,0),",
+				"          LocationNote as string,",
+				"          LocationLatitude as decimal(7,4),",
+				"          LocationLongitude as decimal(7,4),",
+				"          LocationDatum as string,",
+				"          LocationElevation as integer,",
+				"          LocationElevationUnitOfMeasureId as integer,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          TimezoneId as integer,",
+				"          DaylightSavingsTimeObservedIndicator as boolean,",
+				"          CountryId as integer,",
+				"          SubdivisionId as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Location') ~> Location",
+				"source1, Taxpayer join(OriginalCustomerID == OriginalTaxpayerID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1, Location join(source1@OriginalLocationID == Location@OriginalLocationID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"join2 select(mapColumn(",
+				"          CustomerId = TaxpayerId,",
+				"          OriginalCustomerID,",
+				"          LocationTypeId,",
+				"          LocationId = Location@LocationId,",
+				"          OriginalLocationID = source1@OriginalLocationID,",
+				"          PeriodStartTimestamp,",
+				"          PeriodEndTimestamp,",
+				"          GlobalLocationNumber = Location@GlobalLocationNumber,",
+				"          PreferenceId,",
+				"          CustomerLocationNote",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'CustomerLocation') ~> CustomerLocation"
+			]
+		}
+	}
+}

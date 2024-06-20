@@ -1,0 +1,131 @@
+{
+	"name": "LoadVATTargets_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "VATTargets"
+				},
+				{
+					"name": "Taxpayer"
+				}
+			],
+			"sinks": [
+				{
+					"name": "VATTargetValues"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          VattargetId as string,",
+				"          CustomerId as string,",
+				"          TaxpayerId as string,",
+				"          VATTarget as string,",
+				"          TargetDate as string,",
+				"          TargetSector as string,",
+				"          TargetState as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/VAT_Targets/*']) ~> VATTargets",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality1 as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"filter1, Taxpayer join(VATTargets@TaxpayerId == OriginalTaxpayerID,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"VATTargets filter(not(isNull(TaxpayerId))) ~> filter1",
+				"select2 keyGenerate(output(VattargetId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 select(mapColumn(",
+				"          VattargetId,",
+				"          CustomerId,",
+				"          TaxpayerId,",
+				"          VATTarget,",
+				"          TargetDate,",
+				"          TargetSector,",
+				"          TargetState",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"join1 select(mapColumn(",
+				"          CustomerId = Taxpayer@TaxpayerId,",
+				"          TaxpayerId = OriginalTaxpayerID,",
+				"          VATTarget,",
+				"          TargetDate,",
+				"          TargetSector,",
+				"          TargetState",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'VAT_Targets',",
+				"     input(",
+				"          VattargetId as long,",
+				"          CustomerId as long,",
+				"          TaxpayerId as string,",
+				"          VATTarget as long,",
+				"          TargetDate as date,",
+				"          TargetSector as string,",
+				"          TargetState as string",
+				"     )) ~> VATTargetValues"
+			]
+		}
+	}
+}

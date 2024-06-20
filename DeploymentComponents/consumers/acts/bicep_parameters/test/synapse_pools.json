@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "computePools": {
+        "value": [
+          {
+            "id": 0,
+            "PoolName": "defaultSpark32",
+            "nodeCount": 10,
+            "isComputeIsolationEnabled": false,
+            "nodeSizeFamily": "MemoryOptimized",
+            "nodeSize": "Medium",
+            "autoScaleEnabled": true,
+            "autoScaleMinNodeCount": 3,
+            "autoScaleMaxNodeCount": 10,
+            "cacheSize": 50,
+            "dynamicExecutorAllocationEnabled": false,
+            "dynamicExecutorAllocationMinExecutors": 1,
+            "dynamicExecutorAllocationMaxExecutors": 10,
+            "autoPauseEnabled": true,
+            "autoPauseDelayInMinutes": 15,
+            "sparkVersion": "3.2",
+            "sessionLevelPackagesEnabled": false
+          },
+          {
+            "id": 1,
+            "PoolName": "defaultSpark33",
+            "nodeCount": 10,
+            "isComputeIsolationEnabled": false,
+            "nodeSizeFamily": "MemoryOptimized",
+            "nodeSize": "Medium",
+            "autoScaleEnabled": true,
+            "autoScaleMinNodeCount": 3,
+            "autoScaleMaxNodeCount": 10,
+            "cacheSize": 50,
+            "dynamicExecutorAllocationEnabled": false,
+            "dynamicExecutorAllocationMinExecutors": 1,
+            "dynamicExecutorAllocationMaxExecutors": 10,
+            "autoPauseEnabled": true,
+            "autoPauseDelayInMinutes": 15,
+            "sparkVersion": "3.3",
+            "sessionLevelPackagesEnabled": false
+          }
+        ]
+      }
+    }
+  }

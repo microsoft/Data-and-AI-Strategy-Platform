@@ -1,0 +1,887 @@
+{
+    "name": "PL_BO_Part1_FlattenAndValidate",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Latest Processed Record",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "ForEach1",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL and [source_id] NOT IN (SELECT DISTINCT sourceCTId FROM [dbo].[DataMapping])\n",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "If Ownership Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(contains(string(activity('Get Latest Processed Record').output),'Ownership'))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Ownership Row IDs",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL and [raw_folderpath] LIKE '%Ownership%'\n",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Validation - Ownership - Person",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Staging - Ownership",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_OwnershipValidation_Person",
+                                    "type": "DataFlowReference"
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        },
+                        {
+                            "name": "Validation - Ownership - Entity",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Staging - Ownership",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_OwnershipValidation_Entity",
+                                    "type": "DataFlowReference"
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        },
+                        {
+                            "name": "Staging - Ownership",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Ownership Row IDs",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "NB_FlattenOpenData",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "ownership_flag": {
+                                        "value": "1",
+                                        "type": "int"
+                                    },
+                                    "contracting_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "sanctions_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "raw_folderpath": {
+                                        "value": "BeneficialOwnership/OpenData/Ownership/AllData/v1/full/*/*/*/*",
+                                        "type": "string"
+                                    },
+                                    "country_names": {
+                                        "value": {
+                                            "value": "@variables('country_names')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "country_name_alternatives": {
+                                        "value": {
+                                            "value": "@variables('country_name_alternatives')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Contracting Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(contains(string(activity('Get Latest Processed Record').output),'Contracting'))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Contracting Row IDs",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL and [raw_folderpath] LIKE '%Contracting%'\n",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Validation - Contracting - Activity",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Staging - Contracting",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_ContractingValidation_Activity",
+                                    "type": "DataFlowReference"
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        },
+                        {
+                            "name": "Staging - Contracting",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Contracting Row IDs",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "NB_FlattenOpenData",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "ownership_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "contracting_flag": {
+                                        "value": "1",
+                                        "type": "int"
+                                    },
+                                    "sanctions_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "raw_folderpath": {
+                                        "value": "BeneficialOwnership/OpenData/Contracting/*/AllTime/v1/full/*/*/*/*",
+                                        "type": "string"
+                                    },
+                                    "country_names": {
+                                        "value": {
+                                            "value": "@variables('country_names')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "country_name_alternatives": {
+                                        "value": {
+                                            "value": "@variables('country_name_alternatives')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true
+                            }
+                        },
+                        {
+                            "name": "Validation - Contracting - Contact",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Staging - Contracting",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_ContractingValidation_Contact",
+                                    "type": "DataFlowReference"
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Corporate Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(contains(string(activity('Get Latest Processed Record').output),'Corporate'))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Corporate Row IDs",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL and [raw_folderpath] LIKE '%Corporate%'\n",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Validation - Corporate",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Corporate Row IDs",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_CorporateValidation",
+                                    "type": "DataFlowReference",
+                                    "parameters": {
+                                        "raw_folderpath": {
+                                            "value": "'@{'BeneficialOwnership/OpenData/Corporate/AllData/v1/full/*/*/*'}'",
+                                            "type": "Expression"
+                                        },
+                                        "raw_filename": {
+                                            "value": "'@{'companies.csv'}'",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Get Latest Processed Record - Customer Data",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Optional - Set Country Names",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Optional - Set Country Name Alternative Spellings",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Set Contact Threshold",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT DISTINCT A.[id]\n,A.[source_id]\n,A.[raw_filename]\n,A.[raw_folderpath]\n,B.[sinkdbTableName]\n,B.[mappingJSON]\nFROM [dbo].[ControlTable] A\nJOIN [dbo].[DataMapping] B\nON A.[source_id] = B.[sourceCTId]\nWHERE  A.[raw_folderpath] LIKE 'raw%' and A.[processed] IS NULL",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record - Customer Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Latest Processed Record - Customer Data').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Map Customer Data",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "NB_RenameData",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "folderpath": {
+                                        "value": {
+                                            "value": "@replace(item().raw_folderpath,'raw/','')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "filename": {
+                                        "value": {
+                                            "value": "@item().raw_filename",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "mapping": {
+                                        "value": {
+                                            "value": "@item().mappingJSON",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "sinkdbTable": {
+                                        "value": {
+                                            "value": "@item().sinkdbTableName",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true
+                            }
+                        },
+                        {
+                            "name": "UpdateProcessed",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "Map Customer Data",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[dbo].[UpdateProcessedFlag]",
+                                "storedProcedureParameters": {
+                                    "rowid": {
+                                        "value": {
+                                            "value": "@item().id",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_SQL_Orchestration",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Sanctions Data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Latest Processed Record",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(contains(string(activity('Get Latest Processed Record').output),'Sanctions'))",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get Sanctions Row IDs",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": "SELECT *\nFROM [dbo].[ControlTable]\nWHERE  [raw_folderpath] LIKE 'raw%' and [processed] IS NULL and [raw_folderpath] LIKE '%Sanctions%'\n",
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Validation - Sanctions",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [
+                                {
+                                    "activity": "Staging - Sanctions",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "df_SanctionsValidation",
+                                    "type": "DataFlowReference"
+                                },
+                                "integrationRuntime": {
+                                    "referenceName": "ManagedVnetIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        },
+                        {
+                            "name": "Staging - Sanctions",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Sanctions Row IDs",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "NB_FlattenOpenData",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "ownership_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "contracting_flag": {
+                                        "value": "0",
+                                        "type": "int"
+                                    },
+                                    "sanctions_flag": {
+                                        "value": "1",
+                                        "type": "int"
+                                    },
+                                    "raw_folderpath": {
+                                        "value": "BeneficialOwnership/OpenData/Sanctions/AllData/v1/full/*/*/*/*",
+                                        "type": "string"
+                                    },
+                                    "country_names": {
+                                        "value": {
+                                            "value": "@variables('country_names')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "country_name_alternatives": {
+                                        "value": {
+                                            "value": "@variables('country_name_alternatives')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Optional - Set Country Names",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "country_names",
+                    "value": {
+                        "value": "Nigeria",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Optional - Set Country Name Alternative Spellings",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "country_name_alternatives",
+                    "value": {
+                        "value": "NG",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Set Contact Threshold",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "contact_threshold",
+                    "value": "40"
+                }
+            },
+            {
+                "name": "Execute Load to LakeDB",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "If Ownership Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "If Contracting Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "If Corporate Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "If Sanctions Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_BO_Part2_LoadLakeDB",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true,
+                    "parameters": {
+                        "contact_threshold": {
+                            "value": "@variables('contact_threshold')",
+                            "type": "Expression"
+                        },
+                        "ownership_rowIDs": {
+                            "value": "@coalesce(activity('Get Ownership Row IDs').output.value,'')",
+                            "type": "Expression"
+                        },
+                        "contracting_rowIDs": {
+                            "value": "@coalesce(activity('Get Contracting Row IDs').output.value,'')",
+                            "type": "Expression"
+                        },
+                        "contact_rowIDs": {
+                            "value": "@coalesce(union(activity('Get Corporate Row IDs').output.value,activity('Get Ownership Row IDs').output.value,activity('Get Contracting Row IDs').output.value,activity('Get Sanctions Row IDs').output.value),'')",
+                            "type": "Expression"
+                        },
+                        "redflag_rowIDs": {
+                            "value": "@coalesce(union(activity('Get Corporate Row IDs').output.value,activity('Get Sanctions Row IDs').output.value),'')",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            }
+        ],
+        "variables": {
+            "Flag_Ownership": {
+                "type": "String"
+            },
+            "Flag_Contracting": {
+                "type": "String"
+            },
+            "country_names": {
+                "type": "String"
+            },
+            "country_name_alternatives": {
+                "type": "String"
+            },
+            "lake_db_name": {
+                "type": "String"
+            },
+            "contact_threshold": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "BeneficialOwnership"
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-06-14T20:09:18Z"
+    },
+    "type": "Microsoft.Synapse/workspaces/pipelines"
+}

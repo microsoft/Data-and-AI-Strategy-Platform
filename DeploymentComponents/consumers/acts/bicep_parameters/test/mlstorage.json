@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "FROM_VARIABLE_FILE"
+    },
+    "storageAccountType": {
+      "value": "Standard_ZRS"
+    },
+    "accessTier": {
+      "value": "Hot"
+    },
+    "isHnsEnabled": {
+      "value": false
+    },
+    "requireInfrastructureEncryption": {
+      "value": true
+    },
+    "softDeleteEnabled": {
+      "value": false
+    },
+    "autoDeletePolicy": {
+      "value": false
+    },
+    "DataLakeContainerNames": {
+      "value": [
+      ]
+    },
+    "deployblobPE": {
+      "value": true
+    },
+    "deploydfsPE": {
+      "value": false
+    },
+    "deployfilePE": {
+      "value": true
+    },
+    "deployqueuePE": {
+      "value": true
+    },
+    "deploytablePE": {
+      "value": true
+    },
+    "enableDiagnostics": {
+      "value": false
+    }
+  }
+}

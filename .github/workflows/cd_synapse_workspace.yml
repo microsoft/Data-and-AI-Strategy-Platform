@@ -1,0 +1,139 @@
+# This is a basic workflow to help you get started with Actions
+
+name: cd-adf
+
+# Controls when the workflow will run
+on:
+  # Workflow executes when new commit happens on main within data factory publish folder
+  #push:
+  #  branches:
+  #    - 'adf_publish'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      DeploymemtEnvironments:
+        description: 'Deploy To Which Environments'
+        required: true 
+        type: choice
+        options: 
+          - test
+          - prod
+          - test and prod
+      PublishBranchName:
+        description: 'Synapse Publish Branch Name'
+        required: true 
+        type: choice
+        options: 
+          - UpdateOptionsWithCorrectBranchName
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  deploy-to-test-synpase:
+    if: ${{ inputs.DeploymemtEnvironments == 'test' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: test
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.PublishBranchName }}
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $synapseWorkspaceNameDev = $json_data.synapseWorkspaceName
+          "synapseWorkspaceNameDev=$synapseWorkspaceNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_test.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      - name: Deploy to Synapse Workspace
+        uses: azure/synapse-workspace-deployment@V1.8.0
+        with:
+          environment: 'Azure Public'
+          TargetWorkspaceName: ${{ env.synapseWorkspaceName }}
+          resourceGroup: ${{ env.PrimaryRgName }}
+          TemplateFile: ./${{ env.synapseWorkspaceNameDev }}/TemplateForWorkspace.json
+          ParametersFile: ./${{ env.synapseWorkspaceNameDev }}/TemplateParametersForWorkspace.json
+          OverrideArmParameters: ./${{ env.synapseWorkspaceName }}/OverrideArmParameters.yaml
+          clientId: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          clientSecret: ${{ secrets.SERVICE_PRINCIPAL_SECRET }}
+          subscriptionId: ${{ secrets.SUBSCRIPTION_ID }}
+          tenantId: ${{ secrets.TENANT_ID }}
+          DeleteArtifactsNotInTemplate: 'true'
+          managedIdentity: 'false'
+          deployManagedPrivateEndpoint: 'false'
+          FailOnMissingOverrides: 'true'
+          operation: 'validateDeploy'
+
+  deploy-to-prod-synapse:
+    if: ${{ inputs.DeploymemtEnvironments == 'prod' || inputs.DeploymemtEnvironments == 'test and prod' || inputs.DeploymemtEnvironments == '' }}
+
+    # The type of runner that the job will run on
+    runs-on: ubuntu-22.04
+
+    environment: 
+      name: production
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.PublishBranchName }}
+
+      - name: Get Variables
+        run: |
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_dev.json" | ConvertFrom-Json
+
+          # dev data factory name
+          $synapseWorkspaceNameDev = $json_data.synapseWorkspaceName
+          "synapseWorkspaceNameDev=$synapseWorkspaceNameDev" >> $env:GITHUB_ENV
+
+          $json_data = Get-Content "./DeploymentComponents/variables/general_variables/variables_prod.json" | ConvertFrom-Json -AsHashtable
+          foreach ( $item in $json_data.GetEnumerator() )
+          {
+            if($($item.Value).GetType().Name.ToUpper().Contains("HASHTABLE") -or $($item.Value).GetType().Name.ToUpper().Contains("OBJECT[]")){
+              $value = $($item.Value) | ConvertTo-Json -Compress
+              "$($item.Name)=$value" >> $env:GITHUB_ENV
+            } else {
+              "$($item.Name)=$($item.Value)" >> $env:GITHUB_ENV
+            }
+          }
+        shell: pwsh
+
+      - name: Deploy to Synapse Workspace
+        uses: azure/synapse-workspace-deployment@V1.8.0
+        with:
+          environment: 'Azure Public'
+          TargetWorkspaceName: ${{ env.synapseWorkspaceName }}
+          resourceGroup: ${{ env.PrimaryRgName }}
+          TemplateFile: ./${{ env.synapseWorkspaceNameDev }}/TemplateForWorkspace.json
+          ParametersFile: ./${{ env.synapseWorkspaceNameDev }}/TemplateParametersForWorkspace.json
+          OverrideArmParameters: ./${{ env.synapseWorkspaceName }}/OverrideArmParameters.yaml
+          clientId: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+          clientSecret: ${{ secrets.SERVICE_PRINCIPAL_SECRET }}
+          subscriptionId: ${{ secrets.SUBSCRIPTION_ID }}
+          tenantId: ${{ secrets.TENANT_ID }}
+          DeleteArtifactsNotInTemplate: 'true'
+          managedIdentity: 'false'
+          deployManagedPrivateEndpoint: 'false'
+          FailOnMissingOverrides: 'true'
+          operation: 'validateDeploy'

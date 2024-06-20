@@ -1,0 +1,88 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "managedApiConnections": {
+        "sql_1": {
+            "api": {
+                "id": "/subscriptions/subID/providers/Microsoft.Web/locations/AzureResourceLocation/managedApis/sql"
+            },
+            "authentication": {
+                "type": "ManagedServiceIdentity"
+            },
+            "connection": {
+                "id": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Web/connections/LogicAppSqlConn"
+            },
+            "connectionProperties": {
+                "authentication": {
+                    "audience": "https://database.windows.net/",
+                    "type": "ManagedServiceIdentity"
+                }
+            },
+            "connectionRuntimeUrl": "ReplaceConnectionRuntimeUrl"
+        }
+    },
+    "serviceProviderConnections": {
+        "AzureBlob": {
+            "displayName": "ALDS2",
+            "parameterValues": {
+                "blobStorageEndpoint": "@appsetting('AzureBlob_blobStorageEndpoint')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/AzureBlob"
+            }
+        },
+        "AzureBlob-2": {
+            "displayName": "DataLake",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "blobStorageEndpoint": "@appsetting('AzureBlob_12_blobStorageEndpoint')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/AzureBlob"
+            }
+        },
+        "sql": {
+            "displayName": "sqlConn",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "@appsetting('sql_databaseName')",
+                "serverName": "@appsetting('sql_serverName')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        },
+        "sql-2": {
+            "displayName": "serverless",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "StoredProcDB",
+                "managedIdentityType": "SystemAssigned",
+                "serverName": "mainSynapse-ondemand.sql.azuresynapse.net"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        },
+        "sql-3": {
+            "displayName": "ControlTable",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "MetadataControl",
+                "managedIdentityType": "SystemAssigned",
+                "serverName": "mainSQL.database.windows.net"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        }
+    }
+}

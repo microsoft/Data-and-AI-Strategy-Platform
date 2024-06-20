@@ -1,0 +1,238 @@
+{
+	"name": "df_AnomalyResults_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "AnomalyResults"
+				},
+				{
+					"name": "Taxpayer"
+				},
+				{
+					"name": "AnomalyType"
+				},
+				{
+					"name": "sector"
+				}
+			],
+			"sinks": [
+				{
+					"name": "AnomalyResultDB"
+				}
+			],
+			"transformations": [
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "lookupAnomalyType"
+				},
+				{
+					"name": "LookupSector"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "select6"
+				},
+				{
+					"name": "select7"
+				},
+				{
+					"name": "select8"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          AnomalyResultID as string,",
+				"          OriginalAnomalyResultID as string,",
+				"          CustomerID as string,",
+				"          State as string,",
+				"          Sector as string,",
+				"          Date as string,",
+				"          AnomalyResult as string,",
+				"          TaxAnomalyTypeID as string,",
+				"          VAT as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/AnomalyResults/*']) ~> AnomalyResults",
+				"source(output(",
+				"          TaxpayerId as long,",
+				"          OriginalTaxpayerID as string,",
+				"          TaxpayerEstablishedDate as date,",
+				"          TaxpayerTypeId as integer,",
+				"          ResponsibilityCenterId as integer,",
+				"          LedgerId as integer,",
+				"          LedgerAccountNumber as string,",
+				"          Note as string,",
+				"          PartyId as long,",
+				"          GlobalLocationNumber as decimal(13,0),",
+				"          LegalEntityName as string,",
+				"          LegalEntityStateRegistration as string,",
+				"          StateOfLegalEntityResidence as string,",
+				"          LegalEntityMunicipality as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Taxpayer') ~> Taxpayer",
+				"source(output(",
+				"          TaxAnomalyTypeId as long,",
+				"          OriginalTaxAnomolyTypeID as string,",
+				"          TaxAnomalyTypeName as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'TaxAnomalyTypes') ~> AnomalyType",
+				"source(output(",
+				"          TaxpayerId as string,",
+				"          StateId as string,",
+				"          StateName as string,",
+				"          Date as date,",
+				"          Sector as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'TaxpayerStateSector') ~> sector",
+				"select7 keyGenerate(output(AnomalyResultIDNew as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"join1, AnomalyType lookup(AnomalyResults@TaxAnomalyTypeID == OriginalTaxAnomolyTypeID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookupAnomalyType",
+				"select6, select3 lookup(select6@Sector == select3@Sector,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookupSector",
+				"surrogateKey1 derive(Date = toDate(Date)) ~> derivedColumn1",
+				"filter1, Taxpayer join(CustomerID == OriginalTaxpayerID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"AnomalyResults filter(CustomerID != '#N/A') ~> filter1",
+				"sector select(mapColumn(",
+				"          TaxpayerId,",
+				"          StateId,",
+				"          StateName,",
+				"          Sector",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"lookupAnomalyType select(mapColumn(",
+				"          AnomalyResultID,",
+				"          CustomerID,",
+				"          AnomalyResult,",
+				"          State,",
+				"          Sector,",
+				"          Date,",
+				"          VAT,",
+				"          TaxpayerId,",
+				"          OriginalTaxpayerID,",
+				"          TaxpayerEstablishedDate,",
+				"          TaxpayerTypeId,",
+				"          ResponsibilityCenterId,",
+				"          LedgerId,",
+				"          LedgerAccountNumber,",
+				"          Note,",
+				"          PartyId,",
+				"          GlobalLocationNumber,",
+				"          LegalEntityName,",
+				"          LegalEntityStateRegistration,",
+				"          StateOfLegalEntityResidence,",
+				"          LegalEntityMunicipality,",
+				"          TaxAnomalyTypeId = AnomalyType@TaxAnomalyTypeId,",
+				"          TaxAnomalyTypeName",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select6",
+				"LookupSector select(mapColumn(",
+				"          AnomalyResultID,",
+				"          CustomerID,",
+				"          AnomalyResult,",
+				"          State,",
+				"          Date,",
+				"          VAT,",
+				"          TaxpayerId = select6@TaxpayerId,",
+				"          OriginalTaxpayerID,",
+				"          TaxpayerEstablishedDate,",
+				"          TaxpayerTypeId,",
+				"          ResponsibilityCenterId,",
+				"          LedgerId,",
+				"          LedgerAccountNumber,",
+				"          Note,",
+				"          PartyId,",
+				"          GlobalLocationNumber,",
+				"          LegalEntityName,",
+				"          LegalEntityStateRegistration,",
+				"          StateOfLegalEntityResidence,",
+				"          LegalEntityMunicipality1 = LegalEntityMunicipality,",
+				"          TaxAnomalyTypeId,",
+				"          TaxAnomalyTypeName,",
+				"          TaxpayerId = select3@TaxpayerId,",
+				"          StateId,",
+				"          StateName,",
+				"          Sector = select3@Sector",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select7",
+				"derivedColumn1 select(mapColumn(",
+				"          AnomalyResultID = AnomalyResultIDNew,",
+				"          OriginalAnomalyResultID = AnomalyResultID,",
+				"          CustomerID = TaxpayerId,",
+				"          State,",
+				"          Sector,",
+				"          Date,",
+				"          AnomalyResult,",
+				"          AnomalyResult,",
+				"          TaxAnomalyTypeID = TaxAnomalyTypeId,",
+				"          VAT",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select8",
+				"select8 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'AnomalyResults') ~> AnomalyResultDB"
+			]
+		}
+	}
+}

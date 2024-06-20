@@ -1,0 +1,44 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sku_name": {
+            "value": "basic"
+        },
+        "disableLocalAuth": {
+            "value": false
+        },
+        "zoneRedundant": {
+            "value": false
+        },
+        "premiumMessagingPartitions": {
+            "value": 0
+        },
+        "serviceBusNamespaceQueues": {
+            "value": [
+              {
+                "id": 0,
+                "Name": "assetchangenotificationqueue"
+              },
+              {
+                "id": 1,
+                "Name": "assetreviewnotificationqueue"
+              },
+              {
+                "id": 2,
+                "Name": "mailqueue"
+              },
+              {
+                "id": 3,
+                "Name": "pendingassetenrichmentqueue"
+              },
+              {
+                "id": 4,
+                "Name": "pendingassetsstatisticsqueue"
+              }
+            ]
+          }
+    }
+}

@@ -1,0 +1,261 @@
+{
+	"name": "df_ContractingValidation_Activity",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "getJson"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkActivity"
+				}
+			],
+			"transformations": [
+				{
+					"name": "toDate"
+				},
+				{
+					"name": "formatQuarter"
+				},
+				{
+					"name": "selectColumns"
+				},
+				{
+					"name": "selectPivot"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "join1"
+				},
+				{
+					"name": "unpivot1"
+				},
+				{
+					"name": "filter5"
+				},
+				{
+					"name": "select12"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "filter7"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "select13"
+				},
+				{
+					"name": "aggregate2"
+				},
+				{
+					"name": "select14"
+				},
+				{
+					"name": "aggregate3"
+				},
+				{
+					"name": "aggregate4"
+				},
+				{
+					"name": "select15"
+				},
+				{
+					"name": "filter8"
+				},
+				{
+					"name": "filter9"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          date as string,",
+				"          partiesaddressstreetAddress as string,",
+				"          partiesaddresspostalCode as string,",
+				"          partiesaddresscountryName as string,",
+				"          partiesid as string,",
+				"          partiesname as string,",
+				"          partiescontactPointemail as string,",
+				"          partiescontactPointtelephone as string,",
+				"          partiescontactPointurl as string,",
+				"          partiesroles as string,",
+				"          tenderid as string,",
+				"          tendertitle as string,",
+				"          awardsitemsid as string,",
+				"          awardsitemsdescription as string,",
+				"          tenderlotsid as string,",
+				"          tenderlotsdescription as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/Flattened/*']) ~> getJson",
+				"select12 derive(date_modified = toDate(date,  \"yyyy-MM-dd\" )) ~> toDate",
+				"filter8 derive(quarter_year = concat( left(toString(year(date_modified)),4) ,'-', 'Q', toString(ceil(toInteger(month(date_modified))/3)))) ~> formatQuarter",
+				"aggregate3 select(mapColumn(",
+				"          buyer = buyer_name,",
+				"          tender = tender_id,",
+				"          awards_supplier_id = award_supplier_id,",
+				"          lot = lots_id,",
+				"          quarter_year",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectColumns",
+				"unpivot1 select(mapColumn(",
+				"          TimePeriod = quarter_year,",
+				"          EntityID = awards_supplier_id,",
+				"          Attribute = Attributes,",
+				"          Value = buyer",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectPivot",
+				"formatQuarter split(startsWith(role,'buyer'),",
+				"     disjoint: false) ~> split1@(buyer, end)",
+				"split1@buyer select(mapColumn(",
+				"          buyer_id = id,",
+				"          buyer_name = name,",
+				"          tender_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"split1@end select(mapColumn(",
+				"          award_supplier_id = id,",
+				"          award_supplier_name = name,",
+				"          item_id,",
+				"          tender_id,",
+				"          lots_id,",
+				"          quarter_year,",
+				"          items_description = item_description",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select13, select14 join(select13@tender_id == select14@tender_id,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"selectColumns unpivot(output(",
+				"          Attributes as string,",
+				"          buyer as string,",
+				"          tender as string,",
+				"          lot as string,",
+				"          item as string",
+				"     ),",
+				"     ungroupBy(quarter_year,",
+				"          awards_supplier_id),",
+				"     lateral: true,",
+				"     ignoreNullPivots: false) ~> unpivot1",
+				"getJson filter(startsWith(partiesroles,'tenderer') || startsWith(partiesroles, 'supplier') ||",
+				"startsWith(partiesroles,'buyer')) ~> filter5",
+				"filter9 select(mapColumn(",
+				"          date,",
+				"          id = partiesid,",
+				"          name = partiesname,",
+				"          role = partiesroles,",
+				"          tender_id = tenderid,",
+				"          item_id = awardsitemsid,",
+				"          item_description = awardsitemsdescription,",
+				"          lots_id = tenderlotsid",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select12",
+				"filter7 derive(EntityID = lower(EntityID),",
+				"          Value = concat(Attribute,\":\", lower(Value))) ~> derivedColumn1",
+				"selectPivot filter(not(isNull(Value)) && not(like(Value, '%?%') )) ~> filter7",
+				"select2 aggregate(groupBy(buyer_id,",
+				"          buyer_name,",
+				"          tender_id),",
+				"     count = count()) ~> aggregate1",
+				"aggregate1 select(mapColumn(",
+				"          buyer_id,",
+				"          buyer_name,",
+				"          tender_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select13",
+				"select3 aggregate(groupBy(award_supplier_id,",
+				"          award_supplier_name,",
+				"          item_id,",
+				"          tender_id,",
+				"          lots_id,",
+				"          quarter_year),",
+				"     count = count()) ~> aggregate2",
+				"aggregate2 select(mapColumn(",
+				"          award_supplier_id,",
+				"          award_supplier_name,",
+				"          item_id,",
+				"          tender_id,",
+				"          lots_id,",
+				"          quarter_year",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select14",
+				"join1 aggregate(groupBy(buyer_id,",
+				"          quarter_year,",
+				"          buyer_name,",
+				"          select13@tender_id,",
+				"          award_supplier_id,",
+				"          award_supplier_name,",
+				"          item_id,",
+				"          lots_id),",
+				"     count = count()) ~> aggregate3",
+				"derivedColumn1 aggregate(groupBy(TimePeriod,",
+				"          EntityID,",
+				"          Attribute,",
+				"          Value),",
+				"     count = count()) ~> aggregate4",
+				"aggregate4 select(mapColumn(",
+				"          TimePeriod,",
+				"          EntityID,",
+				"          Attribute,",
+				"          Value",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select15",
+				"toDate filter(date_modified > toDate('01-01-2018', 'mm-dd-yyyy')) ~> filter8",
+				"filter5 filter(not(isNull(date)) && \r",
+				"not(isNull(partiesid)) && \r",
+				"not(isNull(tenderid)) && \r",
+				"not(isNull(partiesaddressstreetAddress))) ~> filter9",
+				"select15 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     folderPath: (\"BeneficialOwnership/OpenData/Contracting/ActivityDF_Processed/OpenData\"),",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkActivity"
+			]
+		}
+	}
+}

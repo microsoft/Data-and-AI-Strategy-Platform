@@ -1,0 +1,31 @@
+{
+    "name": "DS_REST_OpenData",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_HTTP",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "URL": {
+                    "value": "@dataset().URL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "URL": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "REST"
+        },
+        "annotations": [],
+        "type": "Binary",
+        "typeProperties": {
+            "location": {
+                "type": "HttpServerLocation"
+            }
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

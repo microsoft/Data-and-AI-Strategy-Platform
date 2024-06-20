@@ -1,0 +1,221 @@
+{
+    "name": "df_ContactBOModel",
+    "properties": {
+        "folder": {
+            "name": "BeneficialOwnership/df_Mapping"
+        },
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "OpenCorporate"
+                },
+                {
+                    "name": "AttributeDefinition"
+                },
+                {
+                    "name": "Entity"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "OpenOwnership"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "ContactContracting"
+                },
+                {
+                    "linkedService": {
+                        "referenceName": "LS_DataLake",
+                        "type": "LinkedServiceReference"
+                    },
+                    "name": "OpenSanctions"
+                }
+            ],
+            "sinks": [
+                {
+                    "name": "ContactModel"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "join1"
+                },
+                {
+                    "name": "select1"
+                },
+                {
+                    "name": "join2"
+                },
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "union1"
+                },
+                {
+                    "name": "union2"
+                },
+                {
+                    "name": "select2"
+                },
+                {
+                    "name": "union3"
+                },
+                {
+                    "name": "unpivot1"
+                },
+                {
+                    "name": "select3"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "filter2"
+                }
+            ],
+            "scriptLines": [
+                "parameters{",
+                "     lake_db_name as string ('BeneficialOwnershipModel')",
+                "}",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Corporate/CorporateDF_Processed/*/*']) ~> OpenCorporate",
+                "source(output(",
+                "          AttributeID as string,",
+                "          Name as string,",
+                "          Description as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: ($lake_db_name),",
+                "     tableName: 'AttributeDefinition') ~> AttributeDefinition",
+                "source(output(",
+                "          EntityID as string,",
+                "          SourceID as string,",
+                "          SourceSystem as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: ($lake_db_name),",
+                "     tableName: 'Entity') ~> Entity",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Ownership/Entity/OwnershipDF_Processed/*/*']) ~> OpenOwnership",
+                "source(output(",
+                "          EntityID as string,",
+                "          AttributeID as string,",
+                "          Value as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/ContactDF_Processed/OpenData/*']) ~> ContactContracting",
+                "source(output(",
+                "          EntityID as string,",
+                "          Category as string,",
+                "          Description as string,",
+                "          Evidence as string,",
+                "          EntityName as string,",
+                "          Address as string",
+                "     ),",
+                "     allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet',",
+                "     fileSystem: 'staging',",
+                "     wildcardPaths:['BeneficialOwnership/OpenData/Sanctions/SanctionsDF_Processed/*/*']) ~> OpenSanctions",
+                "union3, AttributeDefinition join(union3@AttributeID == Name,",
+                "     joinType:'inner',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join1",
+                "aggregate1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "join1, Entity join(union3@EntityID == SourceID,",
+                "     joinType:'inner',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> join2",
+                "join2 aggregate(groupBy(Entity@EntityID,",
+                "          AttributeDefinition@AttributeID,",
+                "          Value),",
+                "     count = count(Entity@EntityID)) ~> aggregate1",
+                "OpenCorporate, OpenOwnership union(byName: true)~> union1",
+                "union1, ContactContracting union(byName: true)~> union2",
+                "OpenSanctions select(mapColumn(",
+                "          EntityID,",
+                "          name = EntityName,",
+                "          address = Address",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select2",
+                "union2, select3 union(byName: true)~> union3",
+                "select2 unpivot(output(",
+                "          AttributeID as string,",
+                "          name as string,",
+                "          address as string",
+                "     ),",
+                "     ungroupBy(EntityID),",
+                "     lateral: true,",
+                "     ignoreNullPivots: false) ~> unpivot1",
+                "unpivot1 select(mapColumn(",
+                "          EntityID,",
+                "          AttributeID,",
+                "          Value = name",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select3",
+                "select1 filter(not(isNull(Value)) && length(Value) > 2) ~> filter1",
+                "filter1 filter(not(instr(Value, \"?\") > 0 )) ~> filter2",
+                "filter2 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     store: 'synapse',",
+                "     databaseType: 'spark',",
+                "     format: 'table',",
+                "     database: ($lake_db_name),",
+                "     tableName: 'Contact') ~> ContactModel"
+            ]
+        }
+    }
+}

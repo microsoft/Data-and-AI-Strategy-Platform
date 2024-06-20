@@ -1,0 +1,95 @@
+{
+    "managedApiConnections": {
+        "azureblob": {
+            "api": {
+                "id": "/subscriptions/subID/providers/Microsoft.Web/locations/AzureResourceLocation/managedApis/azureblob"
+            },
+            "authentication": {
+                "type": "ManagedServiceIdentity"
+            },
+            "connection": {
+                "id": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Web/connections/azureblob"
+            },
+            "connectionProperties": {
+                "authentication": {
+                    "audience": "https://storage.azure.com/",
+                    "type": "ManagedServiceIdentity"
+                }
+            },
+            "connectionRuntimeUrl": "https://6add61b0b204c214.05.common.logic-AzureResourceLocation.azure-apihub.net/apim/azureblob/02e30fcbf10b422d8a8a6c0ebcc050ed"
+        },
+        "sql": {
+            "api": {
+                "id": "/subscriptions/subID/providers/Microsoft.Web/locations/AzureResourceLocation/managedApis/sql"
+            },
+            "authentication": {
+                "type": "ManagedServiceIdentity"
+            },
+            "connection": {
+                "id": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Web/connections/sql"
+            },
+            "connectionProperties": {
+                "authentication": {
+                    "audience": "https://database.windows.net/",
+                    "type": "ManagedServiceIdentity"
+                }
+            },
+            "connectionRuntimeUrl": "https://6add61b0b204c214.05.common.logic-AzureResourceLocation.azure-apihub.net/apim/sql/f7e89aed4c16406ba5ed9a9f7683d549"
+        }
+    },
+    "serviceProviderConnections": {
+        "sql": {
+            "displayName": "sqlConn",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "@appsetting('sql_databaseName')",
+                "serverName": "@appsetting('sql_serverName')"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        },
+        "sql-2": {
+            "displayName": "ServerlessConnectSP",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "sqltest",
+                "serverName": "mainSynapse-ondemand.sql.azuresynapse.net"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        },
+        "sql-3": {
+            "displayName": "computeControlTable",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "MetadataControl",
+                "managedIdentityType": "SystemAssigned",
+                "serverName": "consumerSQL.database.windows.net"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        },
+        "sql3": {
+            "displayName": "serverlessSQL",
+            "parameterValues": {
+                "authProvider": {
+                    "Type": "ManagedServiceIdentity"
+                },
+                "databaseName": "TAXModel",
+                "serverName": "consumerSynapse-ondemand.sql.azuresynapse.net"
+            },
+            "serviceProvider": {
+                "id": "/serviceProviders/sql"
+            }
+        }
+    }
+}

@@ -1,0 +1,116 @@
+{
+	"name": "df_ActivityBOModel",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Mapping"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "OpenContracting"
+				},
+				{
+					"name": "AttributeDefinition"
+				},
+				{
+					"name": "Entity"
+				}
+			],
+			"sinks": [
+				{
+					"name": "ActivityModel"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "join2"
+				},
+				{
+					"name": "aggregate1"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     lake_db_name as string ('BeneficialOwnershipModel')",
+				"}",
+				"source(output(",
+				"          TimePeriod as string,",
+				"          EntityID as string,",
+				"          Attribute as string,",
+				"          Value as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['BeneficialOwnership/OpenData/Contracting/ActivityDF_Processed/*/*']) ~> OpenContracting",
+				"source(output(",
+				"          AttributeID as string,",
+				"          Name as string,",
+				"          Description as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'AttributeDefinition') ~> AttributeDefinition",
+				"source(output(",
+				"          EntityID as string,",
+				"          SourceID as string,",
+				"          SourceSystem as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'Entity') ~> Entity",
+				"OpenContracting, AttributeDefinition join(Attribute == Name,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"aggregate1 select(mapColumn(",
+				"          EntityID,",
+				"          AttributeID,",
+				"          Value,",
+				"          TimePeriod",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"join1, Entity join(OpenContracting@EntityID == SourceID,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join2",
+				"join2 aggregate(groupBy(Entity@EntityID,",
+				"          AttributeID,",
+				"          Value,",
+				"          TimePeriod),",
+				"     count = count(Entity@EntityID)) ~> aggregate1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: ($lake_db_name),",
+				"     tableName: 'Activity') ~> ActivityModel"
+			]
+		}
+	}
+}

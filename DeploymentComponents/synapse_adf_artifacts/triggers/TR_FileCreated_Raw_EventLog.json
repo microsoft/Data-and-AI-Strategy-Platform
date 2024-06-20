@@ -1,0 +1,27 @@
+{
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "PL_3_MoveToStaging_Step1",
+                    "type": "PipelineReference"
+                },
+                "parameters": {
+                    "sourceFolder": "@triggerBody().folderPath",
+                    "sourceFile": "@triggerBody().fileName"
+                }
+            }
+        ],
+        "type": "BlobEventsTrigger",
+        "typeProperties": {
+            "blobPathBeginsWith": "/raw/blobs/ingested_data_log/",
+            "ignoreEmptyBlobs": true,
+            "scope": "/subscriptions/subID/resourceGroups/resourceGroupName/providers/Microsoft.Storage/storageAccounts/dataLakeName",
+            "events": [
+                "Microsoft.Storage.BlobCreated"
+            ]
+        }
+    }
+}

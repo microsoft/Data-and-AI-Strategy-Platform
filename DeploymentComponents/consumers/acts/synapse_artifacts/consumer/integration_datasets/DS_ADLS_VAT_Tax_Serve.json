@@ -1,0 +1,22 @@
+{
+    "name": "DS_ADLS_VAT_Tax_Serve",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_DataLake",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileSystem": "serve"
+            },
+            "columnDelimiter": ",",
+            "escapeChar": "\\",
+            "firstRowAsHeader": true,
+            "quoteChar": "\""
+        },
+        "schema": []
+    }
+}

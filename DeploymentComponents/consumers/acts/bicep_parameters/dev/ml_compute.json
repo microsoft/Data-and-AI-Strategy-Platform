@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "imageBuildComputeCluster": {
+      "value": {
+        "ClusterName": "image-build-compute-cluster",
+        "VMSize": "Standard_D4s_v3",
+        "minNodeCount": 0,
+        "maxNodeCount": 2,
+        "mlComputerscaleSettingsIdleTimeBeforeScaleDown": "PT15M",
+        "mlComputeremoteLoginPortPublicAccess": "Disabled",
+        "mlComputevmOSType": "Linux",
+        "mlComputevmPriority": "Dedicated",
+        "disableLocalAuth": true
+      }
+    },
+    "computeClusters": {
+      "value": [
+        {
+          "id": 0,
+          "ClusterName": "small-cluster",
+          "VMSize": "Standard_E4_v3",
+          "minNodeCount": 0,
+          "maxNodeCount": 4,
+          "mlComputerscaleSettingsIdleTimeBeforeScaleDown": "PT15M",
+          "mlComputeremoteLoginPortPublicAccess": "Disabled",
+          "mlComputevmOSType": "Linux",
+          "mlComputevmPriority": "Dedicated",
+          "disableLocalAuth": true
+        }
+      ]
+    }
+  }
+}

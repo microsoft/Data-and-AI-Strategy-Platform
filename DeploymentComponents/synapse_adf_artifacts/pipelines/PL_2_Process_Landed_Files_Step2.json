@@ -1,0 +1,500 @@
+{
+    "name": "PL_2_Process_Landed_Files_Step2",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Control Table Details For Landed File",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Folder Path Without Container",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[GetControlTableRecord]",
+                        "storedProcedureParameters": {
+                            "fileName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceFile",
+                                    "type": "Expression"
+                                }
+                            },
+                            "folderPath": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@if(equals(variables('folderPathNoContainer'),''),'/',variables('folderPathNoContainer'))",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TopLevelPipelineName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().Pipeline",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TriggerName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().TriggerName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "folderPathWithContainer": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceFolder",
+                                    "type": "Expression"
+                                }
+                            },
+                            "pipeline_id": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline()?.TriggeredByPipelineRunId",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SQL_ControlTable",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "Folder Path Without Container",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "folderPathNoContainer",
+                    "value": {
+                        "value": "@if(contains(pipeline().parameters.sourceFolder,'/'),\nconcat(substring(pipeline().parameters.sourceFolder, 8, add(length(pipeline().parameters.sourceFolder),-8)),'/')\n,'')",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "If Not Duplicate or Ignored",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "True if File False if folder",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@variables('copyBehavior')",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "File is Ignored or Duplicate",
+                            "activities": [
+                                {
+                                    "name": "Add Logging Record",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "7.00:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "dbo.LogDataLandedInLandingZone",
+                                        "storedProcedureParameters": {
+                                            "source_filename": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.sourceFile",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "source_folderpath": {
+                                                "value": {
+                                                    "value": "@concat(pipeline().parameters.sourceFolder,'/')",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "source_file_md5_hash": {
+                                                "value": {
+                                                    "value": "@coalesce(variables('md5Hash'),'N/A')",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "ignoredStatus": {
+                                                "value": {
+                                                    "value": "@activity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "duplicateStatus": {
+                                                "value": {
+                                                    "value": "@activity('Check If Landed File is Duplicate').output.firstRow.file_status",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "destination_filename": {
+                                                "value": "N/A",
+                                                "type": "String"
+                                            },
+                                            "destination_folderpath": {
+                                                "value": "N/A",
+                                                "type": "String"
+                                            },
+                                            "ingestion_status": {
+                                                "value": "Processed",
+                                                "type": "String"
+                                            },
+                                            "pipeline_trigger": {
+                                                "value": {
+                                                    "value": "@pipeline().parameters.triggerName",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "id_to_update": {
+                                                "value": {
+                                                    "value": "@activity('Get Control Table Details For Landed File').output.firstRow.run_id",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "Int32"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_SQL_MetadataControl",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Step 3 Pipeline",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "PL_2_Process_Landed_Files_Step3",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "sourceFolder": {
+                                        "value": "@pipeline().parameters.sourceFolder",
+                                        "type": "Expression"
+                                    },
+                                    "sourceFile": {
+                                        "value": "@pipeline().parameters.sourceFile",
+                                        "type": "Expression"
+                                    },
+                                    "copyBehavior": {
+                                        "value": "@variables('copyBehavior')",
+                                        "type": "Expression"
+                                    },
+                                    "md5Hash": {
+                                        "value": "@variables('md5Hash')",
+                                        "type": "Expression"
+                                    },
+                                    "loggingTableId": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.run_id",
+                                        "type": "Expression"
+                                    },
+                                    "folderPathNoContainer": {
+                                        "value": "@variables('folderPathNoContainer')",
+                                        "type": "Expression"
+                                    },
+                                    "sourceContainer": {
+                                        "value": "@json(activity('Get Control Table Details For Landed File').output.firstRow.SourceObjectSettings).container",
+                                        "type": "Expression"
+                                    },
+                                    "sinkContainer": {
+                                        "value": "@json(activity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings).container",
+                                        "type": "Expression"
+                                    },
+                                    "CopySourceSettings": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.CopySourceSettings",
+                                        "type": "Expression"
+                                    },
+                                    "controlTableId": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.id",
+                                        "type": "Expression"
+                                    },
+                                    "sinkFolderPath": {
+                                        "value": "@json(activity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings).folderPath",
+                                        "type": "Expression"
+                                    },
+                                    "loadType": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.DataLoadingBehaviorSettings",
+                                        "type": "Expression"
+                                    },
+                                    "triggerName": {
+                                        "value": "@pipeline().parameters.triggerName",
+                                        "type": "Expression"
+                                    },
+                                    "DataContract": {
+                                        "value": "@activity('Get Control Table Details For Landed File').output.firstRow.DataContract",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "True if File False if folder",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Control Table Details For Landed File",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(equals(pipeline().parameters.sourceFile,''))",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set Copy Behavior Status 2",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "copyBehavior",
+                                "value": {
+                                    "value": "@if(equals(\nactivity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings\n,'IGNORED FILE'\n)\n,'File is Ignored or Duplicate'\n,json(activity('Get Control Table Details For Landed File').output.firstRow.DataLoadingBehaviorSettings).dataLoadingBehavior\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Get MD5 Hash of File",
+                            "type": "GetMetadata",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "DS_Landing_Binary_File",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "container": {
+                                            "value": "@json(activity('Get Control Table Details For Landed File').output.firstRow.SourceObjectSettings).container",
+                                            "type": "Expression"
+                                        },
+                                        "folderPath": {
+                                            "value": "@variables('folderPathNoContainer')",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@pipeline().parameters.sourceFile",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "fieldList": [
+                                    "contentMD5"
+                                ],
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "BinaryReadSettings"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Check If Landed File is Duplicate",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get MD5 Hash of File",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderStoredProcedureName": "[dbo].[ConfirmLandedDataNotDuplicate]",
+                                    "storedProcedureParameters": {
+                                        "destination_path_prefix": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@if(equals(\nactivity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings\n,'IGNORED FILE'\n)\n,'IGNORED FILE'\n,concat('%'\n,json(activity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings).folderPath\n,'%'\n)\n)",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "filename": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@pipeline().parameters.sourceFile",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "md5hash": {
+                                            "type": "String",
+                                            "value": {
+                                                "value": "@activity('Get MD5 Hash of File').output.contentMD5",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_ControlTable",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set Copy Behavior Status",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Check If Landed File is Duplicate",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "copyBehavior",
+                                "value": {
+                                    "value": "@if(and(\nequals(\nactivity('Check If Landed File is Duplicate').output.firstRow.file_status\n,'Not Duplicate'\n),\nnot(equals(\nactivity('Get Control Table Details For Landed File').output.firstRow.SinkObjectSettings\n,'IGNORED FILE'\n))\n)\n,json(activity('Get Control Table Details For Landed File').output.firstRow.DataLoadingBehaviorSettings).dataLoadingBehavior\n,'File is Ignored or Duplicate'\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "MD5 Hash",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set Copy Behavior Status",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "md5Hash",
+                                "value": {
+                                    "value": "@activity('Get MD5 Hash of File').output.contentMD5",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "sourceFolder": {
+                "type": "string"
+            },
+            "sourceFile": {
+                "type": "string",
+                "defaultValue": "\"\""
+            },
+            "triggerName": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "copyBehavior": {
+                "type": "String"
+            },
+            "folderPathNoContainer": {
+                "type": "String"
+            },
+            "md5Hash": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "ProcessLandingZone"
+        },
+        "annotations": [],
+        "lastPublishTime": "2024-02-06T05:52:13Z"
+    }
+}

@@ -1,0 +1,71 @@
+{
+	"name": "df_Country_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "Country"
+				}
+			],
+			"transformations": [
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CountryId as string,",
+				"          ExistingCountryCode as string,",
+				"          IsoCountryName as string,",
+				"          Iso2LetterCountryCode as string,",
+				"          Iso3LetterCountryCode as string,",
+				"          Iso3DigitCountryCode as string,",
+				"          CapitalOrMajorCityName as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/Country/*']) ~> source1",
+				"source1 keyGenerate(output(CountryId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"surrogateKey1 select(mapColumn(",
+				"          CountryId,",
+				"          ExistingCountryCode,",
+				"          IsoCountryName,",
+				"          Iso2LetterCountryCode,",
+				"          Iso3LetterCountryCode,",
+				"          Iso3DigitCountryCode,",
+				"          CapitalOrMajorCityName",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'Country') ~> Country"
+			]
+		}
+	}
+}

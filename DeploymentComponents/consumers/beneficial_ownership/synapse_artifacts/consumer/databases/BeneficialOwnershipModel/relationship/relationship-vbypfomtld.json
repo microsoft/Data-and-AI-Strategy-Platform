@@ -1,0 +1,26 @@
+{
+	"name": "relationship-vbypfomtld",
+	"properties": {
+		"Name": "relationship-vbypfomtld",
+		"EntityType": "RELATIONSHIP",
+		"Namespace": {
+			"DatabaseName": "BeneficialOwnershipModel"
+		},
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"FromTableName": "AttributeDefinition",
+		"ToTableName": "RiskCovariate",
+		"ColumnRelationshipInformations": [
+			{
+				"FromColumnName": "AttributeID",
+				"ToColumnName": "AttributeID"
+			}
+		],
+		"RelationshipType": 0,
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "5b6835e1-7759-48e7-b7ba-ecd239592239"
+	},
+	"type": "RELATIONSHIP"
+}

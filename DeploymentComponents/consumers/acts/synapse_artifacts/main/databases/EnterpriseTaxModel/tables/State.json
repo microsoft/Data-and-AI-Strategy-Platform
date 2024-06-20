@@ -1,0 +1,139 @@
+{
+	"name": "State",
+	"properties": {
+		"Name": "State",
+		"EntityType": "TABLE",
+		"Namespace": {
+			"DatabaseName": "EnterpriseTaxModel"
+		},
+		"Description": "States are the primary governmental divisions of the United States. \n\nThe District of Columbia is treated as a statistical equivalent of a state for data presentation purposes. \n\nFor Census 2000, the U.S. Census Bureau also treats a number of entities that are not legal divisions of the United States as statistically equivalent to a state: American Samoa, the Commonwealth of the Northern Mariana Islands, Guam, Puerto Rico, and the Virgin Islands of the United States.\n\nEach state and statistically equivalent entity is assigned a two-digit numeric Federal Information Processing Standards (FIPS) code in alphabetical order by state name, followed in alphabetical order by Puerto Rico and the Island Areas. Each state and statistically equivalent entity also is assigned a two-letter FIPS/U.S. Postal Service code and a two-digit census code. The census code is assigned on the basis of the geographic sequence of each state within each census division; the first digit of the code identifies the respective division, except for Puerto Rico and the Island Areas, which are not assigned to any region or division.",
+		"TableType": "EXTERNAL",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"StorageDescriptor": {
+			"Columns": [
+				{
+					"Name": "StateId",
+					"Description": "The unique identifier of a State.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": false,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "State.cdm.json/State",
+						"Name": "StateId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "OriginalStateID",
+					"Description": "Alternate ID For state",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 256,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "StateName",
+					"Description": "The name of the State.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Length": 128,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "State.cdm.json/State",
+						"Name": "StateName"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "CensusDivisionId",
+					"Description": "The unique identifier of the Census Division.",
+					"OriginDataTypeName": {
+						"TypeName": "integer",
+						"IsComplexType": false,
+						"IsNullable": true,
+						"Properties": {
+							"HIVE_TYPE_STRING": "integer"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "State.cdm.json/State",
+						"Name": "CensusDivisionId"
+					},
+					"DeltaFormatInvalidMessages": []
+				},
+				{
+					"Name": "FipsCode",
+					"Description": "The unique identifier of a FIPS Code.",
+					"OriginDataTypeName": {
+						"TypeName": "string",
+						"IsNullable": true,
+						"IsComplexType": false,
+						"Length": 3,
+						"Properties": {
+							"HIVE_TYPE_STRING": "string"
+						}
+					},
+					"BaseAttributeReference": {
+						"Entity": "State.cdm.json/State",
+						"Name": "FipsCode"
+					},
+					"DeltaFormatInvalidMessages": []
+				}
+			],
+			"Format": {
+				"InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+				"OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+				"FormatType": "parquet",
+				"SerializeLib": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+				"Properties": {
+					"path": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/State",
+					"FormatTypeSetToDatabaseDefault": true
+				}
+			},
+			"Source": {
+				"Provider": "ADLS",
+				"Location": "abfss://curated@STORAGEACCOUNTNAME.dfs.core.windows.net/EnterpriseTaxModel/State",
+				"Properties": {
+					"LinkedServiceName": "LS_DataLake",
+					"LocationSetToDatabaseDefault": true
+				}
+			},
+			"Properties": {
+				"textinputformat.record.delimiter": ",",
+				"compression": "{\"type\":\"None\",\"level\":\"optimal\"}",
+				"derivedModelAttributeInfo": "{\"attributeReferences\":{\"StateId\":{\"entity\":\"State.cdm.json/State\",\"name\":\"StateId\"},\"StateName\":{\"entity\":\"State.cdm.json/State\",\"name\":\"StateName\"},\"CensusDivisionId\":{\"entity\":\"State.cdm.json/State\",\"name\":\"CensusDivisionId\"},\"FipsCode\":{\"entity\":\"State.cdm.json/State\",\"name\":\"FipsCode\"}}}"
+			},
+			"Compressed": false,
+			"IsStoredAsSubdirectories": false
+		},
+		"Properties": {
+			"DerivedModelEntityInfo": "{\"entityDirectives\":{\"name\":\"State\",\"description\":\"States are the primary governmental divisions of the United States. \\n\\nThe District of Columbia is treated as a statistical equivalent of a state for data presentation purposes. \\n\\nFor Census 2000, the U.S. Census Bureau also treats a number of entities that are not legal divisions of the United States as statistically equivalent to a state: American Samoa, the Commonwealth of the Northern Mariana Islands, Guam, Puerto Rico, and the Virgin Islands of the United States.\\n\\nEach state and statistically equivalent entity is assigned a two-digit numeric Federal Information Processing Standards (FIPS) code in alphabetical order by state name, followed in alphabetical order by Puerto Rico and the Island Areas. Each state and statistically equivalent entity also is assigned a two-letter FIPS/U.S. Postal Service code and a two-digit census code. The census code is assigned on the basis of the geographic sequence of each state within each census division; the first digit of the code identifies the respective division, except for Puerto Rico and the Island Areas, which are not assigned to any region or division.\",\"baseEntityReference\":{\"name\":\"State\",\"path\":\"State.cdm.json/State\"},\"primaryKey\":[\"StateId\"],\"projectionInfo\":{\"attributes\":[{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"State.cdm.json/State\",\"name\":\"StateId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of a State.\",\"isNullable\":false,\"name\":\"StateId\"},{\"type\":\"New\",\"dataType\":\"string\",\"dataTypeLength\":256,\"description\":\"Alternate ID For state\",\"isNullable\":true,\"name\":\"OriginalStateID\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"State.cdm.json/State\",\"name\":\"StateName\"},\"dataType\":\"string\",\"dataTypeLength\":128,\"description\":\"The name of the State.\",\"isNullable\":true,\"name\":\"StateName\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"State.cdm.json/State\",\"name\":\"CensusDivisionId\"},\"dataType\":\"integer\",\"description\":\"The unique identifier of the Census Division.\",\"isNullable\":true,\"name\":\"CensusDivisionId\"},{\"type\":\"Existing\",\"attributeReference\":{\"entity\":\"State.cdm.json/State\",\"name\":\"FipsCode\"},\"dataType\":\"string\",\"dataTypeLength\":3,\"description\":\"The unique identifier of a FIPS Code.\",\"isNullable\":true,\"name\":\"FipsCode\"}]}}}",
+			"Description": "States are the primary governmental divisions of the United States. \n\nThe District of Columbia is treated as a statistical equivalent of a state for data presentation purposes. \n\nFor Census 2000, the U.S. Census Bureau also treats a number of entities that are not legal divisions of the United States as statistically equivalent to a state: American Samoa, the Commonwealth of the Northern Mariana Islands, Guam, Puerto Rico, and the Virgin Islands of the United States.\n\nEach state and statistically equivalent entity is assigned a two-digit numeric Federal Information Processing Standards (FIPS) code in alphabetical order by state name, followed in alphabetical order by Puerto Rico and the Island Areas. Each state and statistically equivalent entity also is assigned a two-letter FIPS/U.S. Postal Service code and a two-digit census code. The census code is assigned on the basis of the geographic sequence of each state within each census division; the first digit of the code identifies the respective division, except for Puerto Rico and the Island Areas, which are not assigned to any region or division.",
+			"DisplayFolderInfo": "{\"name\":\"Geography\",\"colorCode\":\"#630454\"}",
+			"PrimaryKeys": "StateId",
+			"spark.sql.sources.provider": "parquet"
+		},
+		"Retention": 0,
+		"Temporary": false,
+		"IsRewriteEnabled": false
+	},
+	"type": "TABLE"
+}

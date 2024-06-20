@@ -1,0 +1,349 @@
+{
+	"name": "Contacts_DF",
+	"properties": {
+		"folder": {
+			"name": "BeneficialOwnership/df_Validation/df_testing"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_OpenOwnership_entity",
+						"type": "DatasetReference"
+					},
+					"name": "getJsonOwnership"
+				},
+				{
+					"dataset": {
+						"referenceName": "corporate",
+						"type": "DatasetReference"
+					},
+					"name": "getCsvCorp1"
+				},
+				{
+					"dataset": {
+						"referenceName": "companies2",
+						"type": "DatasetReference"
+					},
+					"name": "getCsvCorp2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "sinkParquetCorporate",
+						"type": "DatasetReference"
+					},
+					"name": "sinkCorporate2"
+				},
+				{
+					"dataset": {
+						"referenceName": "Parquet_sink_ownership",
+						"type": "DatasetReference"
+					},
+					"name": "sinkOwnership"
+				},
+				{
+					"dataset": {
+						"referenceName": "sinkParquetCorporate",
+						"type": "DatasetReference"
+					},
+					"name": "sinkCorporate"
+				},
+				{
+					"dataset": {
+						"referenceName": "ParquetSinkCorporate",
+						"type": "DatasetReference"
+					},
+					"name": "parquetSinkCorporate"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "assert1"
+				},
+				{
+					"name": "assert2"
+				},
+				{
+					"name": "assert3"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "derivedColumn2"
+				},
+				{
+					"name": "derivedColumn3"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "split2"
+				},
+				{
+					"name": "split3"
+				},
+				{
+					"name": "join3"
+				},
+				{
+					"name": "join5"
+				},
+				{
+					"name": "combineAddress"
+				},
+				{
+					"name": "combineFields"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "cleanupFields"
+				},
+				{
+					"name": "aggregate"
+				},
+				{
+					"name": "select4"
+				},
+				{
+					"name": "unpivot"
+				},
+				{
+					"name": "select5"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          statement_id as string,",
+				"          statement_type as string,",
+				"          entity_type as string,",
+				"          entity_name as string,",
+				"          addresses_type as string,",
+				"          addresses_address as string,",
+				"          addresses_country as string,",
+				"          identifiers_id as string,",
+				"          identifiers_scheme as string,",
+				"          Filename as string,",
+				"          Filepath as string,",
+				"          Query_Timestamp as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     limit: 100,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table',",
+				"     staged: true) ~> getJsonOwnership",
+				"source(output(",
+				"          company_number as string,",
+				"          jurisdiction_code as string,",
+				"          name as string,",
+				"          normalised_name as string,",
+				"          company_type as string,",
+				"          nonprofit as boolean,",
+				"          current_status as string,",
+				"          incorporation_date as string,",
+				"          dissolution_date as string,",
+				"          branch as string,",
+				"          business_number as string,",
+				"          current_alternative_legal_name as string,",
+				"          current_alternative_legal_name_language as string,",
+				"          home_jurisdiction_text as string,",
+				"          native_company_number as string,",
+				"          previous_names as string,",
+				"          retrieved_at as string,",
+				"          registry_url as string,",
+				"          restricted_for_marketing as string,",
+				"          inactive as boolean,",
+				"          accounts_next_due as string,",
+				"          accounts_reference_date as string,",
+				"          accounts_last_made_up_date as string,",
+				"          annual_return_next_due as string,",
+				"          annual_return_last_made_up_date as string,",
+				"          has_been_liquidated as string,",
+				"          has_insolvency_history as string,",
+				"          has_charges as string,",
+				"          number_of_employees as string,",
+				"          {registered_address.street_address} as string,",
+				"          {registered_address.locality} as string,",
+				"          {registered_address.region} as string,",
+				"          {registered_address.postal_code} as string,",
+				"          {registered_address.country} as string,",
+				"          {registered_address.in_full} as string,",
+				"          home_jurisdiction_code as string,",
+				"          home_jurisdiction_company_number as string,",
+				"          industry_code_uids as string,",
+				"          latest_accounts_date as string,",
+				"          latest_accounts_cash as string,",
+				"          latest_accounts_assets as string,",
+				"          latest_accounts_liabilities as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     limit: 100,",
+				"     ignoreNoFilesFound: false) ~> getCsvCorp1",
+				"source(output(",
+				"          company_number as string,",
+				"          jurisdiction_code as string,",
+				"          address_type as string,",
+				"          street_address as string,",
+				"          locality as string,",
+				"          region as string,",
+				"          postal_code as string,",
+				"          country as string,",
+				"          country_code as string,",
+				"          in_full as string,",
+				"          start_date as string,",
+				"          end_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     limit: 100,",
+				"     ignoreNoFilesFound: false) ~> getCsvCorp2",
+				"getJsonOwnership select(mapColumn(",
+				"          entity_name,",
+				"          addresses_type,",
+				"          addresses_address,",
+				"          addresses_country,",
+				"          identifiers_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select",
+				"getCsvCorp1 select(mapColumn(",
+				"          company_number,",
+				"          normalised_name,",
+				"          company_type,",
+				"          registry_url,",
+				"          {registered_address.street_address},",
+				"          {registered_address.locality},",
+				"          {registered_address.region},",
+				"          {registered_address.postal_code},",
+				"          {registered_address.country},",
+				"          {registered_address.in_full}",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"getCsvCorp2 select(mapColumn(",
+				"          company_number2 = company_number,",
+				"          street_address2 = street_address",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select assert(expectTrue(not(isNull(identifiers_id)) && not(isNull(addresses_address)) && not(isNull(entity_name)), false, 'assert_null')) ~> assert1",
+				"select1 assert(expectTrue(not(isNull(registry_url)) && not(isNull({registered_address.in_full})) && not(isNull(normalised_name)) && not(isNull(company_number)), false, 'assert_null')) ~> assert2",
+				"select2 assert(expectTrue(not(isNull(street_address2)) && not(isNull(company_number2)), false, 'assert_null')) ~> assert3",
+				"assert1 derive(hasError = at(assertErrorMessages(),'assert_null')) ~> derivedColumn1",
+				"assert2 derive(hasError = at(assertErrorMessages(),'assert_null')) ~> derivedColumn2",
+				"assert3 derive(hasError = at(assertErrorMessages(),'assert_null')) ~> derivedColumn3",
+				"derivedColumn1 split(hasError('hasError'),",
+				"     disjoint: false) ~> split1@(nullRecords, cleanRecords)",
+				"derivedColumn2 split(hasError('hasError'),",
+				"     disjoint: false) ~> split2@(nullRecords, cleanRecords)",
+				"derivedColumn3 split(hasError('hasError'),",
+				"     disjoint: false) ~> split3@(nullRecords, cleanRecords)",
+				"split1@cleanRecords, combineAddress join(entity_name == normalised_name,",
+				"     joinType:'outer',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join3",
+				"split2@cleanRecords, split3@cleanRecords join(company_number == company_number2,",
+				"     joinType:'outer',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join5",
+				"join5 derive(company_number_combined = coalesce(company_number, company_number2),",
+				"          address_combined = coalesce({registered_address.in_full},street_address2)) ~> combineAddress",
+				"join3 derive(all_company_names = coalesce(entity_name, normalised_name),",
+				"          all_company_url = coalesce(identifiers_id,registry_url),",
+				"          all_company_address = coalesce(concat(addresses_address,\" \", addresses_country), address_combined),",
+				"          all_company_ids = coalesce(split(identifiers_id,\"/\")[6], company_number2)) ~> combineFields",
+				"combineFields select(mapColumn(",
+				"          all_company_names,",
+				"          all_company_url,",
+				"          all_company_address,",
+				"          all_company_ids",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select3 derive(all_company_address = lower(replace(all_company_address,  \"[\\\"\\'*()-:;,#]\", \"\")),",
+				"          all_company_url = lower(all_company_url),",
+				"          all_company_ids = lower(replace(all_company_ids,  \"[\\\"\\'*()-:;,#]\", \"\"))) ~> cleanupFields",
+				"cleanupFields aggregate(groupBy(all_company_names,",
+				"          all_company_url,",
+				"          all_company_address,",
+				"          all_company_ids),",
+				"     count = count()) ~> aggregate",
+				"aggregate select(mapColumn(",
+				"          all_company_names,",
+				"          all_company_url,",
+				"          all_company_address,",
+				"          all_company_ids",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select4",
+				"select4 unpivot(output(",
+				"          AttributeID as string,",
+				"          all_company_names as string,",
+				"          all_company_address as string,",
+				"          all_company_url as string",
+				"     ),",
+				"     ungroupBy(all_company_ids),",
+				"     lateral: true,",
+				"     ignoreNullPivots: false) ~> unpivot",
+				"unpivot select(mapColumn(",
+				"          EntityID = all_company_ids,",
+				"          AttributeID,",
+				"          Value = all_company_names",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select5",
+				"split2@nullRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkCorporate2",
+				"split1@nullRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkOwnership",
+				"split3@nullRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkCorporate",
+				"select5 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> parquetSinkCorporate"
+			]
+		}
+	}
+}

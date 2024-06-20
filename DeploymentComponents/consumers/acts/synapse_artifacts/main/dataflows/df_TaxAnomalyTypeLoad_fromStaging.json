@@ -1,0 +1,71 @@
+{
+	"name": "df_TaxAnomalyTypeLoad_fromStaging",
+	"properties": {
+		"folder": {
+			"name": "df_LakeDBLoad/OperationalMapped"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_DataLake",
+						"type": "LinkedServiceReference"
+					},
+					"name": "TaxAnomalyType"
+				}
+			],
+			"sinks": [
+				{
+					"name": "TaxAnomalyTypemap"
+				}
+			],
+			"transformations": [
+				{
+					"name": "RemoveNulls"
+				},
+				{
+					"name": "CreateTaxAnomalyID"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          TaxAnomalyTypeId as string,",
+				"          OriginalTaxAnomalyTypeID as string,",
+				"          TaxAnomalyTypeName as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet',",
+				"     fileSystem: 'staging',",
+				"     wildcardPaths:['EnterpriseTaxModel/TaxAnomalyTypes/*']) ~> TaxAnomalyType",
+				"TaxAnomalyType filter(not(isNull(OriginalTaxAnomalyTypeID))) ~> RemoveNulls",
+				"RemoveNulls keyGenerate(output(TaxAnomalyTypeId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> CreateTaxAnomalyID",
+				"CreateTaxAnomalyID select(mapColumn(",
+				"          TaxAnomalyTypeId,",
+				"          OriginalTaxAnomalyTypeID,",
+				"          TaxAnomalyTypeName",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     store: 'synapse',",
+				"     databaseType: 'spark',",
+				"     format: 'table',",
+				"     database: 'EnterpriseTaxModel',",
+				"     tableName: 'TaxAnomalyTypes',",
+				"     input(",
+				"          TaxAnomalyTypeId as long,",
+				"          TaxAnomalyTypeName as string",
+				"     )) ~> TaxAnomalyTypemap"
+			]
+		}
+	}
+}

@@ -1,0 +1,29 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "kind": {
+            "value": "functionapp,linux"
+        },
+        "linuxFxVersion": {
+            "value": "DOTNET|6.0"
+        },
+        "numberOfWorkers": {
+            "value": 1
+        },
+        "alwaysOn": {
+            "value": true
+        },
+        "http20Enabled": {
+            "value": false
+        },
+        "minimumElasticInstanceCount": {
+            "value": 0
+        },
+        "deployWithPEIncomingRequests": {
+            "value": false
+        }
+    }
+}
