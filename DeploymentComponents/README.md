@@ -35,7 +35,7 @@
 
 1. For each environment you're deploying, update the [general variable file](variables/general_variables/) with the resource names for the resources you indicated you are deploying based on the feature flag file. Also add required tags, Azure location, and resource group names.
     - All non Logic App/Azure Machine Learning/OpenAI resources will be deployed to the resource group inputted in the *PrimaryRg* variable
-    - The *PrimaryRg* variable is required. If you're only deploying Logic App/Azure Machine Learning/OpenAI resources, set the *PrimaryRg* variable as one of the other resource groups
+    - The *PrimaryRg* variable is required. If you're only deploying Logic App/Azure Machine Learning/OpenAI resources, set the *PrimaryRg* variable as the same name as one of the other resource groups
     - Note that most Azure resource names need to be globally unique, but keep the SQL Database name as "MetadataControl"
     - The following variable values can only contain letters and numbers and must be between 3 and 24 characters long
         - *dataLakeName*
