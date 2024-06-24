@@ -6,7 +6,7 @@ Data Strategy is the foundation for implementing a modern data platform, and lev
 
 # Data Strategy
 
-Microsoft Data Strategy Platform & Analytics is an approach to managing data within an organization. It provides the ability to move foundational work to innovation work, maintaining federated consumers’ compute agility while also promoting data engineering reuse, improving data compliance efforts, and controlling data sprawl/cost. With business use case delivery at the core of an effective data strategy, it frees the data out of the application development continuum into the data estate continuum not only for speed to intelligent Business insights but also speed to intelligent business applications. 
+Microsoft Data & AI Strategy Platform is an approach to managing data within an organization. It provides the ability to move foundational work to innovation work, maintaining federated consumers’ compute agility while also promoting data engineering reuse, improving data compliance efforts, and controlling data sprawl/cost. With business use case delivery at the core of an effective data strategy, it frees the data out of the application development continuum into the data estate continuum not only for speed to intelligent Business insights but also speed to intelligent business applications. 
 
 A robust data management and governance capability is crucial for leveraging AI technologies and gaining a competitive edge during an AI-driven transformation. This capability spans people, process, and platform (technology). Therefore, an organization's data strategy should reflect this comprehensive approach. An organization's data strategy should: 
 
