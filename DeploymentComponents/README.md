@@ -5,12 +5,10 @@
     - Pre-create all Resource Groups and Assign the Service Principal Owner RBAC Owner rights at each Resource Group
 
 1. [Create a federated credential for the service principal](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-portal%2Cwindows#add-federated-credentials)
-    - If you're using environments:
-        - Please use an entity type of environment
-        - You will need to create a new federated credential for each environment you're deploying
-            - The IP kit deploys up to 3 environments: **development**, **test**, and **production**
-    - If you're not using environments
-        - Please use a Branch entity type of **main**
+    - Please use an entity type of environment
+    - You will need to create a new federated credential for each environment you're deploying.
+        - The IP kit deploys up to 3 environments: **development**, **test**, and **production**
+        - Your federated credential environment name must match what's in bold above
 
 1. [Create an Azure Active Directory (AAD) group](https://learn.microsoft.com/en-us/azure/active-directory/fundamentals/concept-learn-about-groups) and add all project team members, or, if only you will be interacting with the deployed resources, yourself
 
