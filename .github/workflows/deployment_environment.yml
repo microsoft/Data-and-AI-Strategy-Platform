@@ -718,39 +718,6 @@ jobs:
             IpRangeEnd=${{ env.IpRangeEnd }}
           failOnStdErr: false
 
-      # Combine SQL Files into One for Deployment
-      - name: Combine SQL DDL Files into One for Deployment
-        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
-        uses: azure/powershell@v1
-        with:
-          inlineScript: |
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_logicapp_name', '${{ env.logicAppName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_service_principal_name', '${{ env.servicePrincipalName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeployLogicApp', '${{ env.DeployLogicApp }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_shared_services_group_name', '${{ env.Entra_Group_Shared_Service_Name }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_datafactory_or_synapse_name', '${{ env.dataFactoryName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_synapse_name', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeploySynapse', '${{ env.DeploySynapse }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
-
-            Get-Content ./DeploymentComponents/azure_sql_artifacts/*/*.sql | Set-Content ./DeploymentComponents/azure_sql_artifacts/combined.sql
-          azPSVersion: "latest"  
-
-      - name: Deploy Combined SQL DDL File to Azure SQL DB
-        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
-        uses: azure/sql-action@v2.2.1
-        with:        
-          connection-string: 'Server=${{ env.azureSQLServerName }}.database.windows.net; Initial Catalog=${{ env.azureSQLServerDBName }}; Authentication=Active Directory Default' 
-          path: './DeploymentComponents/azure_sql_artifacts/combined.sql'
-
-      # Set Azure SQL AAD Admin Back to Group with Team Members
-      - name: Set Azure SQL AAD Admin to Group with Project Team Members
-        if: ${{ env.DeployAzureSQLArtifacts == 'True' || env.DeployAzureSQL == 'True' }}
-        uses: azure/powershell@v1
-        with:
-          inlineScript: |
-            az sql server ad-admin update --display-name "${{ env.Entra_Group_Shared_Service_Name }}" --object-id "${{ env.Entra_Group_Shared_Service_ID }}" --server "${{ env.azureSQLServerName }}" --resource-group ${{ env.PrimaryRgName }}
-          azPSVersion: "latest"
-
       - name: Deploy Cognitive Services
         if: ${{ env.DeployCognitiveService == 'True' }}
         uses: Azure/arm-deploy@v1
@@ -1238,6 +1205,39 @@ jobs:
 
               databricks api post /api/2.0/workspace/import --json @notebooks/$name_without_extension.json   
             }
+          azPSVersion: "latest"
+
+      # Combine SQL Files into One for Deployment
+      - name: Combine SQL DDL Files into One for Deployment
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_logicapp_name', '${{ env.logicAppName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_service_principal_name', '${{ env.servicePrincipalName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeployLogicApp', '${{ env.DeployLogicApp }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_shared_services_group_name', '${{ env.Entra_Group_Shared_Service_Name }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_datafactory_or_synapse_name', '${{ env.dataFactoryName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'insert_synapse_name', '${{ env.synapseWorkspaceName }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+            (Get-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql) -Replace 'DeploySynapse', '${{ env.DeploySynapse }}' | Set-Content ./DeploymentComponents/azure_sql_artifacts/stored_procedures/AddManagedIdentitiesAsUsers.sql
+
+            Get-Content ./DeploymentComponents/azure_sql_artifacts/*/*.sql | Set-Content ./DeploymentComponents/azure_sql_artifacts/combined.sql
+          azPSVersion: "latest"  
+
+      - name: Deploy Combined SQL DDL File to Azure SQL DB
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' }}
+        uses: azure/sql-action@v2.2.1
+        with:        
+          connection-string: 'Server=${{ env.azureSQLServerName }}.database.windows.net; Initial Catalog=${{ env.azureSQLServerDBName }}; Authentication=Active Directory Default' 
+          path: './DeploymentComponents/azure_sql_artifacts/combined.sql'
+
+      # Set Azure SQL AAD Admin Back to Group with Team Members
+      - name: Set Azure SQL AAD Admin to Group with Project Team Members
+        if: ${{ env.DeployAzureSQLArtifacts == 'True' || env.DeployAzureSQL == 'True' }}
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            az sql server ad-admin update --display-name "${{ env.Entra_Group_Shared_Service_Name }}" --object-id "${{ env.Entra_Group_Shared_Service_ID }}" --server "${{ env.azureSQLServerName }}" --resource-group ${{ env.PrimaryRgName }}
           azPSVersion: "latest"
 
       # Create ADF Linked Services
