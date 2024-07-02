@@ -327,7 +327,7 @@ jobs:
               $availability = Test-AzPurviewAccountNameAvailability -Name '${{ env.purviewName }}' -Type "Microsoft.Purview/accounts"
               $resourceExists = Get-AzResource -ResourceGroupName "${{ env.PrimaryRgName }}" -Name "${{ env.purviewName }}"
               if ($availability.NameAvailable -eq $false -and [string]::IsNullOrEmpty($resourceExists)) {
-                $errorMessage = 'Please update the mlWorkspaceKeyVaultName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
+                $errorMessage = 'Please update the purviewName variable in the following file in the repository and redeploy: DeliveryIP_GitHub/variables/general_variables/variables_${{ inputs.envFolderPath }}.json. ' + $availability.Message 
                 throw $errorMessage
               }
             }
